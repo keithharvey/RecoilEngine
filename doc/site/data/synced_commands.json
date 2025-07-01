@@ -113,6 +113,24 @@
       "command" : "Skip",
       "description" : "Fast-forwards to a given frame, or stops fast-forwarding"
    },
+   "spectator" : {
+      "arguments" : {},
+      "cheatRequired" : false,
+      "command" : "Spectator",
+      "description" : "Changes the team of the issuing player to be a spectator"
+   },
+   "start" : {
+      "arguments" : {},
+      "cheatRequired" : false,
+      "command" : "Start",
+      "description" : "Starts the game if all players are ready"
+   },
+   "stop" : {
+      "arguments" : {},
+      "cheatRequired" : false,
+      "command" : "Stop",
+      "description" : "Stops the game"
+   },
    "take" : {
       "arguments" : {},
       "cheatRequired" : false,

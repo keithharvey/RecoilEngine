@@ -721,13 +721,13 @@ std::pair <bool, bool> CSyncedLuaHandle::AllowUnitCreation(
  * @param oldTeam integer
  * @param newTeam integer
  * @param capture boolean
- * @return boolean whether or not the transfer is permitted.
+ * @param reason
+ * @return false to disallow unit transfer
  */
-bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture)
+bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture, int reason)
 {
-	RECOIL_DETAILED_TRACY_ZONE;
 	LUA_CALL_IN_CHECK(L, true);
-	luaL_checkstack(L, 7, __func__);
+	luaL_checkstack(L, 8, __func__);
 
 	static const LuaHashString cmdStr(__func__);
 	if (!cmdStr.GetGlobalFunc(L))
@@ -738,9 +738,10 @@ bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, bool ca
 	lua_pushnumber(L, unit->team);
 	lua_pushnumber(L, newTeam);
 	lua_pushboolean(L, capture);
+	lua_pushnumber(L, reason);
 
 	// call the function
-	if (!RunCallIn(L, cmdStr, 5, 1))
+	if (!RunCallIn(L, cmdStr, 6, 1))
 		return true;
 
 	// get the results
@@ -837,25 +838,21 @@ bool CSyncedLuaHandle::AllowUnitCaptureStep(const CUnit* builder, const CUnit* u
  */
 bool CSyncedLuaHandle::AllowUnitTransport(const CUnit* transporter, const CUnit* transportee)
 {
-	RECOIL_DETAILED_TRACY_ZONE;
 	LUA_CALL_IN_CHECK(L, true);
-	luaL_checkstack(L, 2 + 6, __func__);
+	luaL_checkstack(L, 4, __func__);
 
 	static const LuaHashString cmdStr(__func__);
-
 	if (!cmdStr.GetGlobalFunc(L))
-		return true;
+		return true; // the call is not defined
 
 	lua_pushnumber(L, transporter->id);
-	lua_pushnumber(L, transporter->unitDef->id);
-	lua_pushnumber(L, transporter->team);
 	lua_pushnumber(L, transportee->id);
-	lua_pushnumber(L, transportee->unitDef->id);
-	lua_pushnumber(L, transportee->team);
 
-	if (!RunCallIn(L, cmdStr, 6, 1))
+	// call the function
+	if (!RunCallIn(L, cmdStr, 2, 1))
 		return true;
 
+	// get the results
 	const bool allow = luaL_optboolean(L, -1, true);
 	lua_pop(L, 1);
 	return allow;
@@ -882,31 +879,26 @@ bool CSyncedLuaHandle::AllowUnitTransportLoad(
 	const float3& loadPos,
 	bool allowed
 ) {
-	RECOIL_DETAILED_TRACY_ZONE;
 	LUA_CALL_IN_CHECK(L, true);
-	luaL_checkstack(L, 2 + 9, __func__);
+	luaL_checkstack(L, 6, __func__);
 
 	static const LuaHashString cmdStr(__func__);
-
-	// use engine default if callin does not exist
 	if (!cmdStr.GetGlobalFunc(L))
-		return allowed;
+		return true; // the call is not defined
 
 	lua_pushnumber(L, transporter->id);
-	lua_pushnumber(L, transporter->unitDef->id);
-	lua_pushnumber(L, transporter->team);
 	lua_pushnumber(L, transportee->id);
-	lua_pushnumber(L, transportee->unitDef->id);
-	lua_pushnumber(L, transportee->team);
 	lua_pushnumber(L, loadPos.x);
 	lua_pushnumber(L, loadPos.y);
 	lua_pushnumber(L, loadPos.z);
+	lua_pushboolean(L, allowed);
 
-	if (!RunCallIn(L, cmdStr, 9, 1))
+	// call the function
+	if (!RunCallIn(L, cmdStr, 6, 1))
 		return true;
 
-	// ditto if it does but returns nothing
-	const bool allow = luaL_optboolean(L, -1, allowed);
+	// get the results
+	const bool allow = luaL_optboolean(L, -1, true);
 	lua_pop(L, 1);
 	return allow;
 }
@@ -950,6 +942,7 @@ bool CSyncedLuaHandle::AllowUnitTransportUnload(
 	lua_pushnumber(L, unloadPos.x);
 	lua_pushnumber(L, unloadPos.y);
 	lua_pushnumber(L, unloadPos.z);
+	lua_pushboolean(L, allowed);
 
 	if (!RunCallIn(L, cmdStr, 9, 1))
 		return true;

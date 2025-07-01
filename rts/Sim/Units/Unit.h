@@ -208,7 +208,7 @@ public:
 		ChangeGiven,
 		ChangeCaptured
 	};
-	virtual bool ChangeTeam(int team, ChangeType type);
+	virtual bool ChangeTeam(int team, ChangeType type, int reason = 0);
 	virtual void StopAttackingAllyTeam(int ally);
 
 	//Transporter stuff

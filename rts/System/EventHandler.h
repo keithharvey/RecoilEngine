@@ -146,7 +146,7 @@ class CEventHandler
 		bool AllowCommand(const CUnit* unit, const Command& cmd, int playerNum, bool fromSynced, bool fromLua);
 
 		std::pair <bool, bool> AllowUnitCreation(const UnitDef* unitDef, const CUnit* builder, const BuildInfo* buildInfo);
-		bool AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture);
+		bool AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture, int reason);
 		bool AllowUnitBuildStep(const CUnit* builder, const CUnit* unit, float part);
 		bool AllowUnitCaptureStep(const CUnit* builder, const CUnit* unit, float part);
 		bool AllowUnitTransport(const CUnit* transporter, const CUnit* transportee);

@@ -1839,34 +1839,29 @@ int LuaSyncedCtrl::DestroyUnit(lua_State* L)
 int LuaSyncedCtrl::TransferUnit(lua_State* L)
 {
 	CheckAllowGameChanges(L);
-	CUnit* unit = ParseUnit(L, __func__, 1);
 
+	if (inTransferUnit >= MAX_CMD_RECURSION_DEPTH) {
+		luaL_error(L, "TransferUnit recursion limit reached");
+		return 0;
+	}
+
+	CUnit* unit = ParseUnit(L, __func__, 1);
 	if (unit == nullptr)
 		return 0;
 
-	const int newTeam = luaL_checkint(L, 2);
-	if (!teamHandler.IsValidTeam(newTeam))
+	const int newTeamID = luaL_checkint(L, 2);
+	const bool captured = luaL_optboolean(L, 3, false);
+	const int reason = luaL_optint(L, 4, 0);
+
+	if (!teamHandler.IsValidTeam(newTeamID))
 		return 0;
 
-	const CTeam* team = teamHandler.Team(newTeam);
-	if (team == nullptr)
-		return 0;
+	++inTransferUnit;
+	const bool success = unit->ChangeTeam(newTeamID, captured ? CUnit::ChangeCaptured : CUnit::ChangeGiven, reason);
+	--inTransferUnit;
 
-	bool given = true;
-	if (FullCtrl(L) && lua_isboolean(L, 3))
-		given = lua_toboolean(L, 3);
-
-	if (inTransferUnit >= MAX_CMD_RECURSION_DEPTH)
-		luaL_error(L, "TransferUnit() recursion is not permitted, max depth: %d", MAX_CMD_RECURSION_DEPTH);
-
-	++ inTransferUnit;
-	ASSERT_SYNCED(unit->id);
-	ASSERT_SYNCED((int)newTeam);
-	ASSERT_SYNCED(given);
-	unit->ChangeTeam(newTeam, given ? CUnit::ChangeGiven
-	                                : CUnit::ChangeCaptured);
-	-- inTransferUnit;
-	return 0;
+	lua_pushboolean(L, success);
+	return 1;
 }
 
 /******************************************************************************

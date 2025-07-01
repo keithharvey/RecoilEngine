@@ -500,50 +500,6 @@ public:
 };
 
 
-class TakeActionExecutor : public ISyncedActionExecutor {
-public:
-	TakeActionExecutor() : ISyncedActionExecutor(
-		"Take",
-		"Transfers all units of allied teams without any "
-		"active players to the team of the issuing player"
-	) {
-	}
-
-	bool Execute(const SyncedAction& action) const final {
-		const CPlayer* actionPlayer = playerHandler.Player(action.GetPlayerID());
-
-		if (actionPlayer->spectator && !gs->cheatEnabled)
-			return false;
-
-		if (!game->playing)
-			return true;
-
-		for (int a = 0; a < teamHandler.ActiveTeams(); ++a) {
-			if (!teamHandler.AlliedTeams(a, actionPlayer->team))
-				continue;
-
-			bool hasPlayer = false;
-
-			for (int b = 0; b < playerHandler.ActivePlayers(); ++b) {
-				const CPlayer* teamPlayer = playerHandler.Player(b);
-
-				if (!teamPlayer->active) continue;
-				if (teamPlayer->spectator) continue;
-				if (teamPlayer->team != a) continue;
-
-				hasPlayer = true;
-				break;
-			}
-
-			if (!hasPlayer)
-				teamHandler.Team(a)->GiveEverythingTo(actionPlayer->team);
-		}
-
-		return true;
-	}
-};
-
-
 class SkipActionExecutor : public ISyncedActionExecutor {
 public:
 	SkipActionExecutor() : ISyncedActionExecutor("Skip", "Fast-forwards to a given frame, or stops fast-forwarding") {
@@ -564,6 +520,23 @@ public:
 			LOG_L(L_WARNING, "/%s: wrong syntax", GetCommand().c_str());
 		}
 		return true;
+	}
+};
+
+
+class TakeActionExecutor : public ISyncedActionExecutor {
+public:
+	TakeActionExecutor() : ISyncedActionExecutor(
+		"Take",
+		"Transfers all units of allied teams without any active players to the team of the issuing player"
+	) {}
+
+	bool Execute(const SyncedAction& action) const final {
+		if (luaRules != nullptr) {
+			luaRules->GotChatMsg(action.GetCmd() + " " + action.GetArgs(), action.GetPlayerID());
+			return true;
+		}
+		return false;
 	}
 };
 
@@ -595,10 +568,8 @@ void SyncedGameCommands::AddDefaultActionExecutors()
 	AddActionExecutor(AllocActionExecutor<LuaGaiaActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<DesyncActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<AtmActionExecutor>());
-	if (modInfo.allowTake)
-		AddActionExecutor(AllocActionExecutor<TakeActionExecutor>());
-
 	AddActionExecutor(AllocActionExecutor<SkipActionExecutor>());
+	AddActionExecutor(AllocActionExecutor<TakeActionExecutor>());
 }
 
 

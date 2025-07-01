@@ -235,7 +235,7 @@ void CTeam::GiveEverythingTo(const unsigned toTeam)
 
 	// NB: can not be a ranged loop since ChangeTeam removes [i] from teamUnits on success
 	for (size_t i = 0; i < teamUnits.size(); ) {
-		i += (!teamUnits[i]->ChangeTeam(toTeam, CUnit::ChangeGiven));
+		i += (!teamUnits[i]->ChangeTeam(toTeam, CUnit::ChangeGiven, 0));
 	}
 }
 

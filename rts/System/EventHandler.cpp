@@ -276,10 +276,13 @@ std::pair <bool, bool> CEventHandler::AllowUnitCreation(const UnitDef* unitDef, 
 	return {allow, drop};
 }
 
-bool CEventHandler::AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture)
+bool CEventHandler::AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture, int reason)
 {
 	ZoneScoped;
-	return ControlIterateDefTrue(listAllowUnitTransfer, &CEventClient::AllowUnitTransfer, unit, newTeam, capture);
+	bool result = true;
+	for (auto& ec : listAllowUnitTransfer)
+		result &= ec->AllowUnitTransfer(unit, newTeam, capture, reason);
+	return result;
 }
 
 bool CEventHandler::AllowUnitBuildStep(const CUnit* builder, const CUnit* unit, float part)

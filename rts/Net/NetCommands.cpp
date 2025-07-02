@@ -951,7 +951,7 @@ void CGame::ClientReadNet()
 
 						// ChangeTeam() handles the AllowUnitTransfer() LuaRule
 						if (u->team == srcTeamID && !u->beingBuilt) {
-							u->ChangeTeam(dstTeamID, CUnit::ChangeGiven);
+							u->ChangeTeam(dstTeamID, CUnit::ChangeGiven, static_cast<int>(ChangeTeamReasonCpp::GIVEN));
 						}
 					}
 				} catch (const netcode::UnpackPacketException& ex) {
@@ -1077,21 +1077,12 @@ void CGame::ClientReadNet()
 
 					for (const int32_t unitID: netSelUnits) {
 						CUnit* unit = unitHandler.GetUnit(unitID);
-
-						if (unit == nullptr)
-							continue;
-						if (unit->UnderFirstPersonControl())
-							continue;
-						// in godmode we can have units selected that are not ours
-						if (unit->team != srcTeamID)
-							continue;
-
-						if (unit->isDead)
-							continue;
-						if (unit->IsCrashing())
-							continue;
-
-						unit->ChangeTeam(dstTeamID, CUnit::ChangeGiven);
+						if (unit != nullptr) {
+							if (unit->team == srcTeamID) {
+								// prevent players from giving units from other teams
+								unit->ChangeTeam(dstTeamID, CUnit::ChangeGiven, static_cast<int>(ChangeTeamReasonCpp::GIVEN));
+							}
+						}
 					}
 
 					netSelUnits.clear();

@@ -1512,6 +1512,8 @@ void CUnit::ChangeLos(int losRad, int airRad)
 bool CUnit::ChangeTeam(int newteam, ChangeType type, int reason)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
+	const int oldteam = team;
+
 	if (isDead)
 		return false;
 
@@ -1520,7 +1522,7 @@ bool CUnit::ChangeTeam(int newteam, ChangeType type, int reason)
 	if (unitHandler.NumUnitsByTeamAndDef(newteam, unitDef->id) >= unitDef->maxThisUnit)
 		return false;
 
-	if (!eventHandler.AllowUnitTransfer(this, newteam, (type == ChangeCaptured), reason))
+	if (!eventHandler.AllowUnitTransfer(this, newteam, type == ChangeCaptured, reason))
 		return false;
 
 	// do not allow old player to keep controlling the unit
@@ -1528,8 +1530,6 @@ bool CUnit::ChangeTeam(int newteam, ChangeType type, int reason)
 		fpsControlPlayer->StopControllingUnit();
 		assert(fpsControlPlayer == nullptr);
 	}
-
-	const int oldteam = team;
 
 	selectedUnitsHandler.RemoveUnit(this);
 	SetGroup(nullptr);

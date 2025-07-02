@@ -26,6 +26,9 @@
 // for usMemBuffer
 #include "Sim/Units/Scripts/LuaUnitScript.h"
 
+// for profiler
+#include "System/TimeProfiler.h"
+
 
 class CPlayer;
 class CCommandAI;
@@ -63,6 +66,16 @@ static constexpr uint8_t LOS_ALL_BITS = \
 	(LOS_INLOS      | LOS_INRADAR      | LOS_PREVLOS      | LOS_CONTRADAR);
 static constexpr uint8_t LOS_ALL_MASK_BITS = \
 	(LOS_INLOS_MASK | LOS_INRADAR_MASK | LOS_PREVLOS_MASK | LOS_CONTRADAR_MASK);
+
+
+// C++-side reasons for changing team.
+// For the full list of reasons, see 'GG.CHANGETEAM_REASON' in luarules/gadgets.lua
+// The two enums should be kept in sync for shared values.
+enum class ChangeTeamReasonCpp {
+	RECLAIMED = 0,
+	GIVEN     = 1,
+	CAPTURED  = 2,
+};
 
 
 class CUnit : public CSolidObject
@@ -208,7 +221,7 @@ public:
 		ChangeGiven,
 		ChangeCaptured
 	};
-	virtual bool ChangeTeam(int team, ChangeType type, int reason = 0);
+	virtual bool ChangeTeam(int team, ChangeType type, int reason);
 	virtual void StopAttackingAllyTeam(int ally);
 
 	//Transporter stuff

@@ -516,16 +516,31 @@ void CFactory::AssignBuildeeOrders(CUnit* unit) {
 
 
 
-bool CFactory::ChangeTeam(int newTeam, ChangeType type)
+bool CFactory::ChangeTeam(int newTeam, ChangeType type, int reason)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
-	if (!CBuilding::ChangeTeam(newTeam, type))
-		return false;
+	if (curBuild != nullptr) {
+		if (team == newTeam) {
+			// our team is not changing, so we can continue building
+			// but we still have to transfer the buildee if it is finished
+			if (curBuild->isDead) {
+				// buildee is a wreck, we can not be building it
+				StopBuild();
+			} else {
+				if (curBuild->buildProgress >= 1.0f) {
+					curBuild->ChangeTeam(newTeam, type, reason);
+				}
+			}
+		} else {
+			// team is changing, so we can not continue building
+			if (!curBuild->isDead) {
+				curBuild->ChangeTeam(newTeam, type, reason);
+			}
+			StopBuild();
+		}
+	}
 
-	if (curBuild)
-		curBuild->ChangeTeam(newTeam, type);
-
-	return true;
+	return CBuilding::ChangeTeam(newTeam, type, reason);
 }
 
 

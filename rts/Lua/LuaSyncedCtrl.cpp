@@ -1849,18 +1849,27 @@ int LuaSyncedCtrl::TransferUnit(lua_State* L)
 	if (unit == nullptr)
 		return 0;
 
-	const int newTeamID = luaL_checkint(L, 2);
+	const int newTeam = luaL_checkint(L, 2);
 	const bool captured = luaL_optboolean(L, 3, false);
-	const int reason = luaL_optint(L, 4, 0);
+	// Lua-side reasons, C++ is ignorant of them.
+	// See LuaConstGame.cpp (or equivalent) for the enum definition.
+	// Default to 5 (LUA_GENERIC)
+	const int reason = luaL_optint(L, 4, 5);
 
-	if (!teamHandler.IsValidTeam(newTeamID))
+	if (!teamHandler.IsValidTeam(newTeam))
 		return 0;
 
-	++inTransferUnit;
-	const bool success = unit->ChangeTeam(newTeamID, captured ? CUnit::ChangeCaptured : CUnit::ChangeGiven, reason);
-	--inTransferUnit;
+	const CUnit::ChangeType type =
+		(captured)? CUnit::ChangeCaptured: CUnit::ChangeGiven;
 
-	lua_pushboolean(L, success);
+	if (++inTransferUnit > MAX_CMD_RECURSION_DEPTH) {
+		luaL_error(L, "[%s] recursion limit reached", __func__);
+	}
+
+	const bool result = unit->ChangeTeam(newTeam, type, reason);
+	inTransferUnit--;
+
+	lua_pushboolean(L, result);
 	return 1;
 }
 

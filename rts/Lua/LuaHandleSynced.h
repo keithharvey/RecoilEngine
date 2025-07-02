@@ -122,7 +122,7 @@ class CSyncedLuaHandle : public CLuaHandle
 			const float3& hitPos
 		) override;
 
-		bool SyncedActionFallback(const std::string& line, int playerID) override;
+		bool SyncedActionFallback(const std::string& msg, int playerID) override;
 
 	protected:
 		CSyncedLuaHandle(CSplitLuaHandle* base, const std::string& name, int order);

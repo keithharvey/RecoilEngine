@@ -35,12 +35,6 @@
       "command" : "EditDefs",
       "description" : "Allows/Disallows editing of unit-, feature- and weapon-defs through Lua"
    },
-   "give" : {
-      "arguments" : {},
-      "cheatRequired" : true,
-      "command" : "Give",
-      "description" : "Places one or multiple units of a single or multiple types on the map, instantly; by default belonging to your own team"
-   },
    "globallos" : {
       "arguments" : {},
       "cheatRequired" : true,
@@ -130,11 +124,5 @@
       "cheatRequired" : false,
       "command" : "Stop",
       "description" : "Stops the game"
-   },
-   "take" : {
-      "arguments" : {},
-      "cheatRequired" : false,
-      "command" : "Take",
-      "description" : "Transfers all units of allied teams without any active players to the team of the issuing player"
    }
 }

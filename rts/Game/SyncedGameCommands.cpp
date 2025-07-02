@@ -175,26 +175,6 @@ public:
 };
 
 
-class GiveActionExecutor : public ISyncedActionExecutor {
-public:
-	GiveActionExecutor() : ISyncedActionExecutor(
-		"Give",
-		"Places one or multiple units of a single or multiple types "
-		"on the map, instantly; by default belonging to your own team",
-		true
-	) {
-	}
-
-	bool Execute(const SyncedAction& action) const final {
-		// not for autohosts
-		if (!playerHandler.IsValidPlayer(action.GetPlayerID()))
-			return false;
-		unitLoader->ParseAndExecuteGiveUnitsCommand(CSimpleParser::Tokenize(action.GetArgs(), 0), playerHandler.Player(action.GetPlayerID())->team);
-		return true;
-	}
-};
-
-
 class BaseDestroyActionExecutor : public ISyncedActionExecutor {
 public:
 	BaseDestroyActionExecutor(const std::string& command, const std::string& description, bool runDeathScript)
@@ -202,7 +182,7 @@ public:
 
 	bool Execute(const SyncedAction& action) const {
 		const std::vector<std::string>& args = CSimpleParser::Tokenize(action.GetArgs(), 0);
-		if (args.size() == 0) {
+		if (args.empty()) {
 			LOG_L(L_WARNING, "not enough arguments (\"/%s <unitID:int...>\")", this->GetCommand().c_str());
 			return false;
 		}
@@ -210,11 +190,12 @@ public:
 		LOG("[%s] unitIDs: %s", this->GetCommand().c_str(), action.GetArgs().c_str());
 		for (const auto& it : args) {
 			int unitId = StringToInt<int>(it);
-			CUnit *unit = unitHandler.GetUnit(unitId);
+			CUnit* unit = unitHandler.GetUnit(unitId);
 
 			if (unit != nullptr) {
 				unit->KillUnit(nullptr, false, !this->runDeathScript, -CSolidObject::DAMAGE_KILLED_CHEAT);
-			} else {
+			}
+			else {
 				LOG("[%s] Wrong unitID: %i", this->GetCommand().c_str(), unitId);
 			}
 		}
@@ -224,6 +205,7 @@ public:
 private:
 	bool runDeathScript;
 };
+
 
 class DestroyActionExecutor : public BaseDestroyActionExecutor {
 public:
@@ -523,23 +505,6 @@ public:
 	}
 };
 
-
-class TakeActionExecutor : public ISyncedActionExecutor {
-public:
-	TakeActionExecutor() : ISyncedActionExecutor(
-		"Take",
-		"Transfers all units of allied teams without any active players to the team of the issuing player"
-	) {}
-
-	bool Execute(const SyncedAction& action) const final {
-		if (luaRules != nullptr) {
-			luaRules->GotChatMsg(action.GetCmd() + " " + action.GetArgs(), action.GetPlayerID());
-			return true;
-		}
-		return false;
-	}
-};
-
 } // namespace (unnamed)
 
 
@@ -556,7 +521,6 @@ void SyncedGameCommands::AddDefaultActionExecutors()
 	AddActionExecutor(AllocActionExecutor<GodModeActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<GlobalLosActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<NoCostActionExecutor>());
-	AddActionExecutor(AllocActionExecutor<GiveActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<DestroyActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<RemoveActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<NoSpectatorChatActionExecutor>());
@@ -569,7 +533,6 @@ void SyncedGameCommands::AddDefaultActionExecutors()
 	AddActionExecutor(AllocActionExecutor<DesyncActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<AtmActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<SkipActionExecutor>());
-	AddActionExecutor(AllocActionExecutor<TakeActionExecutor>());
 }
 
 

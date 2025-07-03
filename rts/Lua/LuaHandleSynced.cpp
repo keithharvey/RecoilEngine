@@ -860,6 +860,20 @@ bool CSyncedLuaHandle::AllowUnitTransport(const CUnit* transporter, const CUnit*
 	return allow;
 }
 
+/***
+ *
+ * @function SyncedCallins:AllowUnitTransportLoad
+ * @param transporterID integer
+ * @param transporterUnitDefID integer
+ * @param transporterTeam integer
+ * @param transporteeID integer
+ * @param transporteeUnitDefID integer
+ * @param transporteeTeam integer
+ * @param x number
+ * @param y number
+ * @param z number
+ * @return boolean whether or not the transport load is allowed
+ */
 bool CSyncedLuaHandle::AllowUnitTransportLoad(
 	const CUnit* transporter,
 	const CUnit* transportee,
@@ -895,6 +909,20 @@ bool CSyncedLuaHandle::AllowUnitTransportLoad(
 	return allow;
 }
 
+/***
+ *
+ * @function SyncedCallins:AllowUnitTransportUnload
+ * @param transporterID integer
+ * @param transporterUnitDefID integer
+ * @param transporterTeam integer
+ * @param transporteeID integer
+ * @param transporteeUnitDefID integer
+ * @param transporteeTeam integer
+ * @param x number
+ * @param y number
+ * @param z number
+ * @return boolean whether or not the transport unload is allowed
+ */
 bool CSyncedLuaHandle::AllowUnitTransportUnload(
 	const CUnit* transporter,
 	const CUnit* transportee,
@@ -927,10 +955,6 @@ bool CSyncedLuaHandle::AllowUnitTransportUnload(
 	lua_pop(L, 1);
 	return allow;
 }
-
-
-
-
 
 /***
  *

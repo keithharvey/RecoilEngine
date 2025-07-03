@@ -261,10 +261,14 @@ std::pair <bool, bool> CEventHandler::AllowUnitCreation(const UnitDef* unitDef, 
 	ZoneScoped;
 	auto result = std::make_pair(true, true);
 
-	for (auto& ec : listAllowUnitCreation) {
+	for (size_t i = 0; i < listAllowUnitCreation.size(); ) {
+		const auto ec = listAllowUnitCreation[i];
 		const auto r = ec->AllowUnitCreation(unitDef, builder, buildInfo);
 		result.first  &= r.first;
 		result.second &= r.second;
+
+		// the call-in may remove itself from the list
+		i += (i < listAllowUnitCreation.size() && ec == listAllowUnitCreation[i]);
 	}
 
 	return result;
@@ -273,12 +277,7 @@ std::pair <bool, bool> CEventHandler::AllowUnitCreation(const UnitDef* unitDef, 
 bool CEventHandler::AllowUnitTransfer(const CUnit* unit, int newTeam, int reason)
 {
 	ZoneScoped;
-	bool result = true;
-
-	for (auto& ec : listAllowUnitTransfer)
-		result &= ec->AllowUnitTransfer(unit, newTeam, reason);
-
-	return result;
+	return ControlIterateDefTrue(listAllowUnitTransfer, &CEventClient::AllowUnitTransfer, unit, newTeam, reason);
 }
 
 bool CEventHandler::AllowUnitBuildStep(const CUnit* builder, const CUnit* unit, float part)

@@ -141,7 +141,7 @@ end
 
 
 function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, reason)
-  if ((reason ~= 1) or (not enabled)) then -- reason 1 is GIVEN
+  if ((reason ~= GG.CHANGETEAM_REASON.GIVEN) or (not enabled)) then
     return true
   end
 

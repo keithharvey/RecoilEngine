@@ -1839,7 +1839,7 @@ int LuaSyncedCtrl::DestroyUnit(lua_State* L)
  */
 int LuaSyncedCtrl::TransferUnit(lua_State* L)
 {
-	LUA_CALL_IN_CHECK(L);
+	CheckAllowGameChanges(L);
 	const int args = lua_gettop(L);
 	if (args < 3) //unitID, newTeam, reason
 		luaL_error(L, "Incorrect arguments to Spring.TransferUnit(unitID, newTeam, reason)");
@@ -1850,7 +1850,7 @@ int LuaSyncedCtrl::TransferUnit(lua_State* L)
 		return 0;
 
 	if (inTransferUnit >= MAX_CMD_RECURSION_DEPTH) {
-		luaL_error(L, "Spring.TransferUnit: recursion limit reached");
+		luaL_error(L, "TransferUnit() recursion is not permitted, max depth: %d", MAX_CMD_RECURSION_DEPTH);
 		return 0;
 	}
 
@@ -1860,16 +1860,22 @@ int LuaSyncedCtrl::TransferUnit(lua_State* L)
 	if (!teamHandler.IsValidTeam(newTeam))
 		return 0;
 
+	const CTeam* team = teamHandler.Team(newTeam);
+	if (team == nullptr)
+		return 0;
+
 	// team is full
-	if (teamHandler.Team(newTeam)->AtUnitLimit())
+	if (team->AtUnitLimit())
 		return 0;
 
 	inTransferUnit++;
+	ASSERT_SYNCED(unit->id);
+	ASSERT_SYNCED((int)newTeam);
+	ASSERT_SYNCED(reason);
 	const bool result = unit->ChangeTeam(newTeam, reason);
 	inTransferUnit--;
 
-	lua_pushboolean(L, result);
-	return 1;
+	return 0;
 }
 
 /******************************************************************************

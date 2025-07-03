@@ -517,7 +517,7 @@ bool CBuilder::UpdateCapture(const Command& fCommand)
 
 	// let the old owner know that the unit has been captured
 	eventHandler.UnitTaken(curCapturee, team, curCapturee->team);
-	if (!curCapturee->ChangeTeam(team, CUnit::ChangeCaptured, static_cast<int>(ChangeTeamReasonCpp::CAPTURED))) {
+	if (!curCapturee->ChangeTeam(team, static_cast<int>(ChangeTeamReasonCpp::CAPTURED))) {
 		// unit is not deletable or something, so stop trying to capture it
 		StopBuild();
 	}

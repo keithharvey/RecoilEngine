@@ -77,6 +77,7 @@
 #include "System/EventHandler.h"
 #include "System/ObjectDependenceTypes.h"
 #include "System/Log/ILog.h"
+#include "LuaCallInCheck.h"
 
 using std::max;
 
@@ -1838,35 +1839,33 @@ int LuaSyncedCtrl::DestroyUnit(lua_State* L)
  */
 int LuaSyncedCtrl::TransferUnit(lua_State* L)
 {
-	CheckAllowGameChanges(L);
-
-	if (inTransferUnit >= MAX_CMD_RECURSION_DEPTH) {
-		luaL_error(L, "TransferUnit recursion limit reached");
-		return 0;
-	}
+	LUA_CALL_IN_CHECK(L);
+	const int args = lua_gettop(L);
+	if (args < 3) //unitID, newTeam, reason
+		luaL_error(L, "Incorrect arguments to Spring.TransferUnit(unitID, newTeam, reason)");
 
 	CUnit* unit = ParseUnit(L, __func__, 1);
+
 	if (unit == nullptr)
 		return 0;
 
+	if (inTransferUnit >= MAX_CMD_RECURSION_DEPTH) {
+		luaL_error(L, "Spring.TransferUnit: recursion limit reached");
+		return 0;
+	}
+
 	const int newTeam = luaL_checkint(L, 2);
-	const bool captured = luaL_optboolean(L, 3, false);
-	// Lua-side reasons, C++ is ignorant of them.
-	// See LuaConstGame.cpp (or equivalent) for the enum definition.
-	// Default to 5 (LUA_GENERIC)
-	const int reason = luaL_optint(L, 4, 5);
+	const int reason = luaL_checkint(L, 3);
 
 	if (!teamHandler.IsValidTeam(newTeam))
 		return 0;
 
-	const CUnit::ChangeType type =
-		(captured)? CUnit::ChangeCaptured: CUnit::ChangeGiven;
+	// team is full
+	if (teamHandler.Team(newTeam)->AtUnitLimit())
+		return 0;
 
-	if (++inTransferUnit > MAX_CMD_RECURSION_DEPTH) {
-		luaL_error(L, "[%s] recursion limit reached", __func__);
-	}
-
-	const bool result = unit->ChangeTeam(newTeam, type, reason);
+	inTransferUnit++;
+	const bool result = unit->ChangeTeam(newTeam, reason);
 	inTransferUnit--;
 
 	lua_pushboolean(L, result);

@@ -209,8 +209,11 @@ class CEventClient
 		virtual bool AllowCommand(const CUnit* unit, const Command& cmd, int playerNum, bool fromSynced, bool fromLua) { return true; }
 
 		virtual std::pair <bool, bool> AllowUnitCreation(const UnitDef* unitDef, const CUnit* builder, const BuildInfo* buildInfo) { return {true, true}; }
-		virtual bool AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture, int reason) { return true; }
+		/** Returning false will abortion the unit transfer. */
+		virtual bool AllowUnitTransfer(const CUnit* unit, int newTeam, int reason) { return true; }
+		/** Returning false will abortion the unit build step. */
 		virtual bool AllowUnitBuildStep(const CUnit* builder, const CUnit* unit, float part) { return true; }
+		/** Returning false will abortion the unit capture step. */
 		virtual bool AllowUnitCaptureStep(const CUnit* builder, const CUnit* unit, float part) { return true; }
 		virtual bool AllowUnitTransport(const CUnit* transporter, const CUnit* transportee) { return true; }
 		virtual bool AllowUnitTransportLoad(const CUnit* transporter, const CUnit* transportee, const float3& loadPos, bool allowed) { return true; }

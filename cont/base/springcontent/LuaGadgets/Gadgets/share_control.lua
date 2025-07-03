@@ -212,8 +212,8 @@ local function AddRefusal(team, msg)
 end
 
 
-function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, capture)
-  if (capture) then
+function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, reason)
+  if (reason ~= GG.CHANGETEAM_REASON.GIVEN) then
     return true
   end
 

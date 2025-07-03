@@ -516,7 +516,7 @@ void CFactory::AssignBuildeeOrders(CUnit* unit) {
 
 
 
-bool CFactory::ChangeTeam(int newTeam, ChangeType type, int reason)
+bool CFactory::ChangeTeam(int newTeam, int reason)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	if (curBuild != nullptr) {
@@ -528,19 +528,19 @@ bool CFactory::ChangeTeam(int newTeam, ChangeType type, int reason)
 				StopBuild();
 			} else {
 				if (curBuild->buildProgress >= 1.0f) {
-					curBuild->ChangeTeam(newTeam, type, reason);
+					curBuild->ChangeTeam(newTeam, reason);
 				}
 			}
 		} else {
 			// team is changing, so we can not continue building
 			if (!curBuild->isDead) {
-				curBuild->ChangeTeam(newTeam, type, reason);
+				curBuild->ChangeTeam(newTeam, reason);
 			}
 			StopBuild();
 		}
 	}
 
-	return CBuilding::ChangeTeam(newTeam, type, reason);
+	return CBuilding::ChangeTeam(newTeam, reason);
 }
 
 

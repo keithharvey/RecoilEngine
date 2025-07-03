@@ -140,8 +140,8 @@ local function TeamHasNoBuilders(teamID)
 end
 
 
-function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, capture)
-  if (capture or (not enabled)) then
+function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, reason)
+  if ((reason ~= 1) or (not enabled)) then -- reason 1 is GIVEN
     return true
   end
 

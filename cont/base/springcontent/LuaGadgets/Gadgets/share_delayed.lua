@@ -266,32 +266,24 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, capture)
-  if (capture) then
+function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, reason)
+  if ((reason ~= GG.CHANGETEAM_REASON.GIVEN) or (not enabled)) then
     return true
   end
-  if (not enabled) then
+
+  if (Spring.IsCheatingEnabled()) then
     return true
   end
 
   local ud = UnitDefs[unitDefID]
-  if (not ud) then
-    return true  -- something is borked
+  local delay = minDelay
+  if (ud) then
+    delay = delay + math.floor(ud.metalCost * costScale)
   end
 
-  -- compute the share delay
-  local cost = ud.metalCost + (ud.energyCost / 60)
-  local costDelay = math.floor(cost * costScale)
-  local shareDelay = minDelay + costDelay
+  InsertShare(unitID, oldTeam, newTeam, delay)
 
-  local team = teams[oldTeam]
-  if ((team == nil) and (shareDelay <= 0)) then
-    return true  -- share the unit immediately
-  end
-
-  InsertShare(unitID, oldTeam, newTeam, shareDelay)
-
-  return false
+  return false -- delay the transfer
 end
 
 
@@ -309,10 +301,7 @@ function gadget:GameFrame(frameNum)
       local curTeam = Spring.GetUnitTeam(front.unitID)
       if (curTeam and (curTeam == front.oldTeam)) then
         -- FIXME: see if newTeam is alive
-        local tmp = AllowUnitTransfer
-        AllowUnitTransfer = function() return true end
-        Spring.TransferUnit(front.unitID, front.newTeam)
-        AllowUnitTransfer = tmp
+        Spring.TransferUnit(front.unitID, front.newTeam, GG.CHANGETEAM_REASON.GIVEN)
       end
 
       RemoveShare(front.unitID)
@@ -337,7 +326,7 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-function gadget:UnitDestroyed(unitID, unitDefID, unitTeam)
+function gadget:UnitDestroyed(unitID)
   RemoveShare(unitID)
 end
 
@@ -400,3 +389,13 @@ end
 --------------------------------------------------------------------------------
 --  COMMON
 --------------------------------------------------------------------------------
+
+function gadget:CommandNotify(cmdID, cmdParams, cmdOptions, playerID)
+  if (cmdID == CMD_CANCEL_SHARE) then
+    for _,unitID in ipairs(Spring.GetSelectedUnits(playerID)) do
+      RemoveShare(unitID)
+    end
+    return true -- command was used
+  end
+  return false
+end

@@ -60,7 +60,7 @@ class CSyncedLuaHandle : public CLuaHandle
 		bool AllowCommand(const CUnit* unit, const Command& cmd, int playerNum, bool fromSynced, bool fromLua) override;
 
 		std::pair <bool, bool> AllowUnitCreation(const UnitDef* unitDef, const CUnit* builder, const BuildInfo* buildInfo) override;
-		bool AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture, int reason) override;
+		bool AllowUnitTransfer(const CUnit* unit, int newTeam, int reason) override;
 		bool AllowUnitBuildStep(const CUnit* builder, const CUnit* unit, float part) override;
 		bool AllowUnitCaptureStep(const CUnit* builder, const CUnit* unit, float part) override;
 		bool AllowUnitTransport(const CUnit* transporter, const CUnit* transportee) override;

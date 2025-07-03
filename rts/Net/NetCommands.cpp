@@ -951,7 +951,7 @@ void CGame::ClientReadNet()
 
 						// ChangeTeam() handles the AllowUnitTransfer() LuaRule
 						if (u->team == srcTeamID && !u->beingBuilt) {
-							u->ChangeTeam(dstTeamID, CUnit::ChangeGiven, static_cast<int>(ChangeTeamReasonCpp::GIVEN));
+							u->ChangeTeam(dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN));
 						}
 					}
 				} catch (const netcode::UnpackPacketException& ex) {
@@ -1091,7 +1091,7 @@ void CGame::ClientReadNet()
 						if (unit->IsCrashing())
 							continue;
 
-						unit->ChangeTeam(dstTeamID, CUnit::ChangeGiven, static_cast<int>(ChangeTeamReasonCpp::GIVEN));
+						unit->ChangeTeam(dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN));
 					}
 
 					netSelUnits.clear();

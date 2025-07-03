@@ -68,16 +68,6 @@ static constexpr uint8_t LOS_ALL_MASK_BITS = \
 	(LOS_INLOS_MASK | LOS_INRADAR_MASK | LOS_PREVLOS_MASK | LOS_CONTRADAR_MASK);
 
 
-// C++-side reasons for changing team.
-// For the full list of reasons, see 'GG.CHANGETEAM_REASON' in luarules/gadgets.lua
-// The two enums should be kept in sync for shared values.
-enum class ChangeTeamReasonCpp {
-	RECLAIMED = 0,
-	GIVEN     = 1,
-	CAPTURED  = 2,
-};
-
-
 class CUnit : public CSolidObject
 {
 public:
@@ -217,11 +207,15 @@ public:
 	bool ScriptDecloak(const CSolidObject* object, const CWeapon* weapon);
 	bool GetNewCloakState(bool checkStun);
 
-	enum ChangeType {
-		ChangeGiven,
-		ChangeCaptured
+	// C++-side reasons for changing team.
+	// For the full list of reasons, see 'GG.CHANGETEAM_REASON' in luarules/gadgets.lua
+	// The two enums should be kept in sync for shared values.
+	enum class ChangeTeamReasonCpp {
+		RECLAIMED = 0,
+		GIVEN     = 1,
+		CAPTURED  = 2,
 	};
-	virtual bool ChangeTeam(int team, ChangeType type, int reason);
+	virtual bool ChangeTeam(int team, int reason);
 	virtual void StopAttackingAllyTeam(int ally);
 
 	//Transporter stuff

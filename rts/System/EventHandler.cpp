@@ -259,29 +259,25 @@ bool CEventHandler::AllowCommand(const CUnit* unit, const Command& cmd, int play
 std::pair <bool, bool> CEventHandler::AllowUnitCreation(const UnitDef* unitDef, const CUnit* builder, const BuildInfo* buildInfo)
 {
 	ZoneScoped;
+	auto result = std::make_pair(true, true);
 
-	bool allow = true;
-	bool drop = true;
-
-	for (size_t i = 0; i < listAllowUnitCreation.size(); ) {
-		const auto ec = listAllowUnitCreation[i];
-		const auto [a, d] = ec->AllowUnitCreation(unitDef, builder, buildInfo);
-		allow &= a;
-		drop  &= d;
-
-		// the call-in may remove itself from the list
-		i += (i < listAllowUnitCreation.size() && ec == listAllowUnitCreation[i]);
+	for (auto& ec : listAllowUnitCreation) {
+		const auto r = ec->AllowUnitCreation(unitDef, builder, buildInfo);
+		result.first  &= r.first;
+		result.second &= r.second;
 	}
 
-	return {allow, drop};
+	return result;
 }
 
-bool CEventHandler::AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture, int reason)
+bool CEventHandler::AllowUnitTransfer(const CUnit* unit, int newTeam, int reason)
 {
 	ZoneScoped;
 	bool result = true;
+
 	for (auto& ec : listAllowUnitTransfer)
-		result &= ec->AllowUnitTransfer(unit, newTeam, capture, reason);
+		result &= ec->AllowUnitTransfer(unit, newTeam, reason);
+
 	return result;
 }
 

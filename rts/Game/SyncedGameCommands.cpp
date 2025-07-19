@@ -30,6 +30,7 @@
 #include "System/FileSystem/SimpleParser.h"
 #include "System/Log/ILog.h"
 #include "System/SafeUtil.h"
+#include "System/StringUtil.h"
 
 #include <string>
 #include <vector>
@@ -175,26 +176,6 @@ public:
 };
 
 
-class GiveActionExecutor : public ISyncedActionExecutor {
-public:
-	GiveActionExecutor() : ISyncedActionExecutor(
-		"Give",
-		"Places one or multiple units of a single or multiple types "
-		"on the map, instantly; by default belonging to your own team",
-		true
-	) {
-	}
-
-	bool Execute(const SyncedAction& action) const final {
-		// not for autohosts
-		if (!playerHandler.IsValidPlayer(action.GetPlayerID()))
-			return false;
-		unitLoader->ParseAndExecuteGiveUnitsCommand(CSimpleParser::Tokenize(action.GetArgs(), 0), playerHandler.Player(action.GetPlayerID())->team);
-		return true;
-	}
-};
-
-
 class BaseDestroyActionExecutor : public ISyncedActionExecutor {
 public:
 	BaseDestroyActionExecutor(const std::string& command, const std::string& description, bool runDeathScript)
@@ -202,7 +183,7 @@ public:
 
 	bool Execute(const SyncedAction& action) const {
 		const std::vector<std::string>& args = CSimpleParser::Tokenize(action.GetArgs(), 0);
-		if (args.size() == 0) {
+		if (args.empty()) {
 			LOG_L(L_WARNING, "not enough arguments (\"/%s <unitID:int...>\")", this->GetCommand().c_str());
 			return false;
 		}
@@ -210,11 +191,12 @@ public:
 		LOG("[%s] unitIDs: %s", this->GetCommand().c_str(), action.GetArgs().c_str());
 		for (const auto& it : args) {
 			int unitId = StringToInt<int>(it);
-			CUnit *unit = unitHandler.GetUnit(unitId);
+			CUnit* unit = unitHandler.GetUnit(unitId);
 
 			if (unit != nullptr) {
 				unit->KillUnit(nullptr, false, !this->runDeathScript, -CSolidObject::DAMAGE_KILLED_CHEAT);
-			} else {
+			}
+			else {
 				LOG("[%s] Wrong unitID: %i", this->GetCommand().c_str(), unitId);
 			}
 		}
@@ -224,6 +206,7 @@ public:
 private:
 	bool runDeathScript;
 };
+
 
 class DestroyActionExecutor : public BaseDestroyActionExecutor {
 public:
@@ -500,17 +483,52 @@ public:
 };
 
 
+class SkipActionExecutor : public ISyncedActionExecutor {
+public:
+	SkipActionExecutor() : ISyncedActionExecutor("Skip", "Fast-forwards to a given frame, or stops fast-forwarding") {
+	}
+
+	bool Execute(const SyncedAction& action) const final {
+		if (action.GetArgs().find_first_of("start") == 0) {
+			std::istringstream buf(action.GetArgs().substr(6));
+			int targetFrame;
+			buf >> targetFrame;
+			game->StartSkip(targetFrame);
+			LOG("Skipping to frame %i", targetFrame);
+		}
+		else if (action.GetArgs() == "end") {
+			game->EndSkip();
+			LOG("Skip finished");
+		} else {
+			LOG_L(L_WARNING, "/%s: wrong syntax", GetCommand().c_str());
+		}
+		return true;
+	}
+};
+
 class TakeActionExecutor : public ISyncedActionExecutor {
 public:
 	TakeActionExecutor() : ISyncedActionExecutor(
 		"Take",
-		"Transfers all units of allied teams without any "
-		"active players to the team of the issuing player"
-	) {
-	}
+		"[DEPRECATED] Transfers all units of allied teams without any active players to the team of the issuing player. Use Lua handlers instead."
+	) {}
 
 	bool Execute(const SyncedAction& action) const final {
-		const CPlayer* actionPlayer = playerHandler.Player(action.GetPlayerID());
+		// First, try to let Lua handle the command
+		const std::string& args = action.GetArgs();
+		const int playerID = action.GetPlayerID();
+		
+		// Check if Lua has registered a handler for this command
+		if (eventHandler.SyncedActionFallback("take" + (args.empty() ? "" : " " + args), playerID)) {
+			// Lua handled it, we're done
+			return true;
+		}
+		
+		// Lua didn't handle it, use fallback implementation
+		// @deprecated This fallback is deprecated and will be removed in future versions
+		LOG_L(L_WARNING, "/take command not implemented by Lua, using deprecated fallback");
+		
+		const CPlayer* actionPlayer = playerHandler.Player(playerID);
 
 		if (actionPlayer->spectator && !gs->cheatEnabled)
 			return false;
@@ -544,25 +562,64 @@ public:
 };
 
 
-class SkipActionExecutor : public ISyncedActionExecutor {
+class CaptureActionExecutor : public ISyncedActionExecutor {
 public:
-	SkipActionExecutor() : ISyncedActionExecutor("Skip", "Fast-forwards to a given frame, or stops fast-forwarding") {
-	}
+	CaptureActionExecutor() : ISyncedActionExecutor(
+		"Capture",
+		"[DEPRECATED] Captures units and structures from enemy teams. Use Lua handlers instead."
+	) {}
 
 	bool Execute(const SyncedAction& action) const final {
-		if (action.GetArgs().find_first_of("start") == 0) {
-			std::istringstream buf(action.GetArgs().substr(6));
-			int targetFrame;
-			buf >> targetFrame;
-			game->StartSkip(targetFrame);
-			LOG("Skipping to frame %i", targetFrame);
+		// First, try to let Lua handle the command
+		const std::string& args = action.GetArgs();
+		const int playerID = action.GetPlayerID();
+		
+		// Check if Lua has registered a handler for this command
+		if (eventHandler.SyncedActionFallback("capture" + (args.empty() ? "" : " " + args), playerID)) {
+			// Lua handled it, we're done
+			return true;
 		}
-		else if (action.GetArgs() == "end") {
-			game->EndSkip();
-			LOG("Skip finished");
-		} else {
-			LOG_L(L_WARNING, "/%s: wrong syntax", GetCommand().c_str());
+		
+		// Lua didn't handle it, use fallback implementation
+		// @deprecated This fallback is deprecated and will be removed in future versions
+		LOG_L(L_WARNING, "/capture command not implemented by Lua, using deprecated fallback");
+		
+		const CPlayer* actionPlayer = playerHandler.Player(playerID);
+		if (actionPlayer->spectator && !gs->cheatEnabled)
+			return false;
+
+		if (!game->playing)
+			return true;
+
+		// Basic fallback: capture from all enemy teams
+		for (int a = 0; a < teamHandler.ActiveTeams(); ++a) {
+			if (teamHandler.AlliedTeams(a, actionPlayer->team))
+				continue;
+
+			// Transfer all units from enemy team
+			const auto& teamUnits = unitHandler.GetUnitsByTeam(a);
+			for (CUnit* unit : teamUnits) {
+				if (unit != nullptr && !unit->isDead) {
+					unit->ChangeTeam(actionPlayer->team, static_cast<int>(CUnit::ChangeTeamReasonCpp::CAPTURED));
+				}
+			}
+
+			// Transfer resources
+			CTeam* sourceTeam = teamHandler.Team(a);
+			CTeam* destTeam = teamHandler.Team(actionPlayer->team);
+			
+			if (sourceTeam != nullptr && destTeam != nullptr) {
+				if (sourceTeam->res.metal > 0.0f) {
+					destTeam->res.metal += sourceTeam->res.metal;
+					sourceTeam->res.metal = 0.0f;
+				}
+				if (sourceTeam->res.energy > 0.0f) {
+					destTeam->res.energy += sourceTeam->res.energy;
+					sourceTeam->res.energy = 0.0f;
+				}
+			}
 		}
+
 		return true;
 	}
 };
@@ -583,7 +640,6 @@ void SyncedGameCommands::AddDefaultActionExecutors()
 	AddActionExecutor(AllocActionExecutor<GodModeActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<GlobalLosActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<NoCostActionExecutor>());
-	AddActionExecutor(AllocActionExecutor<GiveActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<DestroyActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<RemoveActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<NoSpectatorChatActionExecutor>());
@@ -595,10 +651,9 @@ void SyncedGameCommands::AddDefaultActionExecutors()
 	AddActionExecutor(AllocActionExecutor<LuaGaiaActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<DesyncActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<AtmActionExecutor>());
-	if (modInfo.allowTake)
-		AddActionExecutor(AllocActionExecutor<TakeActionExecutor>());
-
 	AddActionExecutor(AllocActionExecutor<SkipActionExecutor>());
+	AddActionExecutor(AllocActionExecutor<TakeActionExecutor>());
+	AddActionExecutor(AllocActionExecutor<CaptureActionExecutor>());
 }
 
 

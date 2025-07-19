@@ -951,7 +951,13 @@ void CGame::ClientReadNet()
 
 						// ChangeTeam() handles the AllowUnitTransfer() LuaRule
 						if (u->team == srcTeamID && !u->beingBuilt) {
-							u->ChangeTeam(dstTeamID, CUnit::ChangeGiven);
+							// @deprecated Direct enum usage is deprecated and will be removed in future versions.
+							// Use Lua handlers instead via SyncedActionFallback.
+							if (!eventHandler.SyncedActionFallback("NetShareTransfer", u->id, srcTeamID, dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN))) {
+								// Lua didn't handle it, use fallback logic
+								// @deprecated This fallback logic is deprecated and will be removed in future versions.
+								u->ChangeTeam(dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN));
+							}
 						}
 					}
 				} catch (const netcode::UnpackPacketException& ex) {
@@ -1050,26 +1056,29 @@ void CGame::ClientReadNet()
 				const float metalShare  = std::clamp(*reinterpret_cast<const float*>(&inbuf[4]), 0.0f, srcTeam->res.metal);
 				const float energyShare = std::clamp(*reinterpret_cast<const float*>(&inbuf[8]), 0.0f, srcTeam->res.energy);
 
-				if (metalShare > 0.0f) {
-					if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "m", metalShare)) {
-						srcTeam->res.metal                       -= metalShare;
-						srcTeam->resSent.metal                   += metalShare;
-						srcTeam->GetCurrentStats().metalSent     += metalShare;
-						dstTeam->res.metal                       += metalShare;
-						dstTeam->resReceived.metal               += metalShare;
-						dstTeam->GetCurrentStats().metalReceived += metalShare;
-					}
-				}
-				if (energyShare > 0.0f) {
-					if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "e", energyShare)) {
-						srcTeam->res.energy                       -= energyShare;
-						srcTeam->resSent.energy                   += energyShare;
-						srcTeam->GetCurrentStats().energySent     += energyShare;
-						dstTeam->res.energy                       += energyShare;
-						dstTeam->resReceived.energy               += energyShare;
-						dstTeam->GetCurrentStats().energyReceived += energyShare;
-					}
-				}
+                // Give Lua first chance to perform resource transfer atomically
+                if (!eventHandler.SyncedActionFallback("NetResourceTransfer", srcTeamID, dstTeamID, metalShare, energyShare)) {
+                    if (metalShare > 0.0f) {
+                        if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "m", metalShare)) {
+                            srcTeam->res.metal                       -= metalShare;
+                            srcTeam->resSent.metal                   += metalShare;
+                            srcTeam->GetCurrentStats().metalSent     += metalShare;
+                            dstTeam->res.metal                       += metalShare;
+                            dstTeam->resReceived.metal               += metalShare;
+                            dstTeam->GetCurrentStats().metalReceived += metalShare;
+                        }
+                    }
+                    if (energyShare > 0.0f) {
+                        if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "e", energyShare)) {
+                            srcTeam->res.energy                       -= energyShare;
+                            srcTeam->resSent.energy                   += energyShare;
+                            srcTeam->GetCurrentStats().energySent     += energyShare;
+                            dstTeam->res.energy                       += energyShare;
+                            dstTeam->resReceived.energy               += energyShare;
+                            dstTeam->GetCurrentStats().energyReceived += energyShare;
+                        }
+                    }
+                }
 
 				if (static_cast<bool>(inbuf[3])) {
 					// share units
@@ -1091,7 +1100,13 @@ void CGame::ClientReadNet()
 						if (unit->IsCrashing())
 							continue;
 
-						unit->ChangeTeam(dstTeamID, CUnit::ChangeGiven);
+						// @deprecated Direct enum usage is deprecated and will be removed in future versions.
+						// Use Lua handlers instead via SyncedActionFallback.
+						if (!eventHandler.SyncedActionFallback("NetShareTransfer", unit->id, srcTeamID, dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN))) {
+							// Lua didn't handle it, use fallback logic
+							// @deprecated This fallback logic is deprecated and will be removed in future versions.
+							unit->ChangeTeam(dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN));
+						}
 					}
 
 					netSelUnits.clear();

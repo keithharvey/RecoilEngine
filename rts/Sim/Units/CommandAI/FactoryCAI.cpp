@@ -381,6 +381,7 @@ void CFactoryCAI::SlowUpdate()
 		return;
 
 	CFactory* fac = static_cast<CFactory*>(owner);
+	bool stopBuildCalled = false;  // Track if we've called StopBuild in this update
 
 	while (!commandQue.empty()) {
 		Command& c = commandQue.front();
@@ -406,11 +407,15 @@ void CFactoryCAI::SlowUpdate()
 					 * Units often get added and removed in large quantities via CTRL/SHIFT,
 					 * such multiple STOPs commands in a row would then produce a freeze
 					 * when the engine tries to process them all in one frame.
-					 * Just execute the last in each series to ensure last build is cancelled
-					 * otherwise last unit stays being built. */
-					if (oldQueueSize == 1 || commandQue[1].GetID() != CMD_STOP) {
+					 * We ensure StopBuild() is called for the first STOP command encountered,
+					 * then optimize by just removing subsequent STOPs without re-stopping. */
+					
+					if (!stopBuildCalled || oldQueueSize == 1) {
+						// First STOP in this update or last command - execute normally to call StopBuild()
 						ExecuteStop(c);
+						stopBuildCalled = true;
 					} else {
+						// Subsequent STOP in this update - just remove without calling StopBuild() again
 						commandQue.pop_front();
 					}
 

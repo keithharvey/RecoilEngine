@@ -214,6 +214,11 @@ bool CTeam::UseResources(const SResourcePack& amount)
 
 void CTeam::GiveEverythingTo(const unsigned toTeam)
 {
+    // First, allow Lua to handle giving all units and resources.
+    // If Lua returns true, it took care of transfers and we can exit.
+    if (eventHandler.SyncedActionFallback("TeamGiveEverything", teamNum, toTeam)) {
+        return;
+    }
 	RECOIL_DETAILED_TRACY_ZONE;
 	CTeam* target = teamHandler.Team(toTeam);
 
@@ -235,7 +240,7 @@ void CTeam::GiveEverythingTo(const unsigned toTeam)
 
 	// NB: can not be a ranged loop since ChangeTeam removes [i] from teamUnits on success
 	for (size_t i = 0; i < teamUnits.size(); ) {
-		i += (!teamUnits[i]->ChangeTeam(toTeam, CUnit::ChangeGiven));
+		i += (!teamUnits[i]->ChangeTeam(toTeam, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN)));
 	}
 }
 

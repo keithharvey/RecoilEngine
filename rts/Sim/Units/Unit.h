@@ -26,6 +26,9 @@
 // for usMemBuffer
 #include "Sim/Units/Scripts/LuaUnitScript.h"
 
+// for profiler
+#include "System/TimeProfiler.h"
+
 
 class CPlayer;
 class CCommandAI;
@@ -204,11 +207,17 @@ public:
 	bool ScriptDecloak(const CSolidObject* object, const CWeapon* weapon);
 	bool GetNewCloakState(bool checkStun);
 
-	enum ChangeType {
-		ChangeGiven,
-		ChangeCaptured
+	// C++-side reasons for changing team.
+	// @deprecated This enum is deprecated and will be removed in future versions.
+	// Use Lua handlers, the engine should be ignorant of the reasons.
+	enum class ChangeTeamReasonCpp {
+		RECLAIMED = 0, // @deprecated Use Lua handlers instead
+		GIVEN     = 1, // @deprecated Use Lua handlers instead
+		CAPTURED  = 2, // @deprecated Use Lua handlers instead
 	};
-	virtual bool ChangeTeam(int team, ChangeType type);
+	virtual bool ChangeTeam(int team, int reason);
+	// @deprecated Use the `ChangeTeam(int team, int reason)` overload to provide better context to Lua handlers.
+	virtual bool ChangeTeam(int team, bool capture);
 	virtual void StopAttackingAllyTeam(int ally);
 
 	//Transporter stuff

@@ -12,11 +12,16 @@ To execute build locally use `build.sh` script
 
 ```console
 $ docker-build-v2/build.sh --help
-Usage: docker-build-v2/build.sh [--help] [--configure|--compile] {windows|linux} [cmake_flag...]
+Usage: docker-build-v2/build.sh [--help] [--configure|--compile] [-j|--jobs {number_of_jobs}] [--docker-platform {platform}] {windows|linux} [cmake_flag...]
 Options:
   --help       print this help message
   --configure  only configure, don't compile
   --compile    only compile, don't configure
+  -j, --jobs   number of concurrent processes to use when building
+  --docker-platform  Docker platform to use (e.g., linux/amd64, linux/arm64)
+
+Environment variables:
+  DOCKER_PLATFORM  Docker platform to use (e.g., linux/amd64 for Apple Silicon)
 ```
 
 For example
@@ -34,6 +39,9 @@ will:
    - `.cache`: compilation cache
    - `build-windows`: compilation output
    - `build-windows/install`: ready to use installation
+
+> [!NOTE]
+> On Apple Silicon Macs, the script automatically uses `--platform linux/amd64` for compatibility. Use `--docker-platform` flag to override if needed.
 
 ### Custom build config
 

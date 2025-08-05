@@ -2,6 +2,23 @@
 
 set -e -u -o pipefail
 
+# Platform detection and configuration
+# Default to linux/amd64 for Apple Silicon compatibility, but allow override
+if [[ -z "${DOCKER_PLATFORM:-}" ]]; then
+  # Check if we're on Apple Silicon (arm64)
+  if [[ "$(uname -m)" == "arm64" ]]; then
+    DOCKER_PLATFORM="linux/amd64"
+  else
+    DOCKER_PLATFORM=""
+  fi
+fi
+
+# Build platform flag for docker commands
+DOCKER_PLATFORM_FLAG=""
+if [[ -n "$DOCKER_PLATFORM" ]]; then
+  DOCKER_PLATFORM_FLAG="--platform $DOCKER_PLATFORM"
+fi
+
 if [[ $(id -u) -eq 0 ]]; then
   echo "You are trying to run build.sh as root, that won't work!"
   echo ""
@@ -10,7 +27,7 @@ if [[ $(id -u) -eq 0 ]]; then
   echo "See official docs: https://docs.docker.com/engine/install/linux-postinstall/"
 fi
 
-USAGE="Usage: $0 [--help] [--configure|--compile] [-j|--jobs {number_of_jobs}] {windows|linux} [cmake_flag...]"
+USAGE="Usage: $0 [--help] [--configure|--compile] [-j|--jobs {number_of_jobs}] [--docker-platform {platform}] {windows|linux} [cmake_flag...]"
 export CONFIGURE=true
 export COMPILE=true
 export CMAKE_BUILD_PARALLEL_LEVEL=
@@ -34,7 +51,22 @@ while (( $# > 0 )); do
       echo "  --configure  only configure, don't compile"
       echo "  --compile    only compile, don't configure"
       echo "  -j, --jobs   number of concurrent processes to use when building"
+      echo "  --docker-platform  Docker platform to use (e.g., linux/amd64, linux/arm64)"
+      echo ""
+      echo "Environment variables:"
+      echo "  DOCKER_PLATFORM  Docker platform to use (e.g., linux/amd64 for Apple Silicon)"
       exit 0
+      ;;
+    --docker-platform)
+      shift
+      if [[ -z "${1-}" ]]; then
+        echo "Error: --docker-platform requires a platform value"
+        echo $USAGE
+        exit 1
+      fi
+      DOCKER_PLATFORM="$1"
+      DOCKER_PLATFORM_FLAG="--platform $DOCKER_PLATFORM"
+      shift
       ;;
     -j|--jobs)
       shift
@@ -67,10 +99,10 @@ mkdir -p build-$OS .cache/ccache-$OS
 image=recoil-build-amd64-$OS:latest
 if [[ -z "$(docker images -q $image 2> /dev/null)" ]]; then
   image=ghcr.io/beyond-all-reason/recoil-build-amd64-$OS:latest
-  docker pull $image
+  docker pull $DOCKER_PLATFORM_FLAG $image
 fi
 
-docker run -it --rm \
+docker run -it --rm $DOCKER_PLATFORM_FLAG \
     -v /etc/passwd:/etc/passwd:ro \
     -v /etc/group:/etc/group:ro \
     --user=$(id -u):$(id -g) \

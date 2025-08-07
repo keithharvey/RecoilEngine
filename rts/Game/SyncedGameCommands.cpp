@@ -30,6 +30,7 @@
 #include "System/FileSystem/SimpleParser.h"
 #include "System/Log/ILog.h"
 #include "System/SafeUtil.h"
+#include "System/StringUtil.h"
 
 #include <string>
 #include <vector>
@@ -505,6 +506,121 @@ public:
 	}
 };
 
+class TakeActionExecutor : public ISyncedActionExecutor {
+public:
+	TakeActionExecutor() : ISyncedActionExecutor(
+		"Take",
+		"Transfers all units of allied teams without any active players to the team of the issuing player"
+	) {}
+
+	bool Execute(const SyncedAction& action) const final {
+		// First, try to let Lua handle the command
+		const std::string& args = action.GetArgs();
+		const int playerID = action.GetPlayerID();
+		
+		// Check if Lua has registered a handler for this command
+		if (eventHandler.SyncedActionFallback("take" + (args.empty() ? "" : " " + args), playerID)) {
+			// Lua handled it, we're done
+			return true;
+		}
+		
+		// Lua didn't handle it, use the original C++ implementation
+		const CPlayer* actionPlayer = playerHandler.Player(playerID);
+
+		if (actionPlayer->spectator && !gs->cheatEnabled)
+			return false;
+
+		if (!game->playing)
+			return true;
+
+		for (int a = 0; a < teamHandler.ActiveTeams(); ++a) {
+			if (!teamHandler.AlliedTeams(a, actionPlayer->team))
+				continue;
+
+			bool hasPlayer = false;
+
+			for (int b = 0; b < playerHandler.ActivePlayers(); ++b) {
+				const CPlayer* teamPlayer = playerHandler.Player(b);
+
+				if (!teamPlayer->active) continue;
+				if (teamPlayer->spectator) continue;
+				if (teamPlayer->team != a) continue;
+
+				hasPlayer = true;
+				break;
+			}
+
+			if (!hasPlayer)
+				teamHandler.Team(a)->GiveEverythingTo(actionPlayer->team);
+		}
+
+		return true;
+	}
+};
+
+
+class CaptureActionExecutor : public ISyncedActionExecutor {
+public:
+	CaptureActionExecutor() : ISyncedActionExecutor(
+		"Capture",
+		"Captures units and structures from enemy teams"
+	) {}
+
+	bool Execute(const SyncedAction& action) const final {
+		// First, try to let Lua handle the command
+		const std::string& args = action.GetArgs();
+		const int playerID = action.GetPlayerID();
+		
+		// Check if Lua has registered a handler for this command
+		if (eventHandler.SyncedActionFallback("capture" + (args.empty() ? "" : " " + args), playerID)) {
+			// Lua handled it, we're done
+			return true;
+		}
+		
+		// Lua didn't handle it, use fallback implementation
+		// @deprecated This fallback is subject to change in future versions
+		LOG_L(L_WARNING, "/capture command not implemented by Lua, using fallback");
+		
+		const CPlayer* actionPlayer = playerHandler.Player(playerID);
+		if (actionPlayer->spectator && !gs->cheatEnabled)
+			return false;
+
+		if (!game->playing)
+			return true;
+
+		// Basic fallback: capture from all enemy teams
+		for (int a = 0; a < teamHandler.ActiveTeams(); ++a) {
+			if (teamHandler.AlliedTeams(a, actionPlayer->team))
+				continue;
+
+			// Transfer all units from enemy team
+			const auto& teamUnits = unitHandler.GetUnitsByTeam(a);
+			for (CUnit* unit : teamUnits) {
+				if (unit != nullptr && !unit->isDead) {
+					unit->ChangeTeam(actionPlayer->team, static_cast<int>(CUnit::ChangeTeamReasonCpp::CAPTURED));
+				}
+			}
+
+			// Transfer resources
+			CTeam* sourceTeam = teamHandler.Team(a);
+			CTeam* destTeam = teamHandler.Team(actionPlayer->team);
+			
+			if (sourceTeam != nullptr && destTeam != nullptr) {
+				if (sourceTeam->res.metal > 0.0f) {
+					destTeam->res.metal += sourceTeam->res.metal;
+					sourceTeam->res.metal = 0.0f;
+				}
+				if (sourceTeam->res.energy > 0.0f) {
+					destTeam->res.energy += sourceTeam->res.energy;
+					sourceTeam->res.energy = 0.0f;
+				}
+			}
+		}
+
+		return true;
+	}
+};
+
 } // namespace (unnamed)
 
 
@@ -533,6 +649,8 @@ void SyncedGameCommands::AddDefaultActionExecutors()
 	AddActionExecutor(AllocActionExecutor<DesyncActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<AtmActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<SkipActionExecutor>());
+	AddActionExecutor(AllocActionExecutor<TakeActionExecutor>());
+	AddActionExecutor(AllocActionExecutor<CaptureActionExecutor>());
 }
 
 

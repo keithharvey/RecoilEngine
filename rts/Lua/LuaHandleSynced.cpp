@@ -727,7 +727,7 @@ bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, int rea
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	LUA_CALL_IN_CHECK(L, true);
-	luaL_checkstack(L, 2 + 5, __func__);
+	luaL_checkstack(L, 8, __func__);
 
 	static const LuaHashString cmdStr(__func__);
 	if (!cmdStr.GetGlobalFunc(L))
@@ -749,6 +749,25 @@ bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, int rea
 	return allow;
 }
 
+/*** Called just before a unit is transferred to a different team.
+ * @deprecated This signature is deprecated. Use the reason-based signature instead.
+ * The reason parameter provides better context for transfer decisions.
+ *
+ * @function SyncedCallins:AllowUnitTransfer
+ * @param unitID integer
+ * @param unitDefID integer
+ * @param oldTeam integer
+ * @param newTeam integer
+ * @param capture boolean
+ * @return false to disallow unit transfer
+ */
+bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture)
+{
+	// Convert capture boolean to appropriate reason value
+	// @deprecated This enum usage is deprecated and will be removed in future versions.
+	const int reason = capture ? static_cast<int>(CUnit::ChangeTeamReasonCpp::CAPTURED) : static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN);
+	return AllowUnitTransfer(unit, newTeam, reason);
+}
 
 /*** Called just before a unit progresses its build percentage.
  *

@@ -133,6 +133,9 @@ progress.make
 /installer/Springlobby/
 /installer/*.exe
 
+# prompts
+prompts/artifacts/
+
 #spring related files when run in portable mode
 /cache
 /lobby

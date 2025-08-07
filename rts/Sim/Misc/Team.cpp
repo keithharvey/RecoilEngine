@@ -222,6 +222,7 @@ void CTeam::GiveEverythingTo(const unsigned toTeam)
 		return;
 	}
 
+	// Transfer resources first - both old and new systems use this
 	if (eventHandler.AllowResourceTransfer(teamNum, toTeam, "m", res.metal)) {
 		target->res.metal += res.metal;
 		res.metal = 0.0f;
@@ -231,6 +232,9 @@ void CTeam::GiveEverythingTo(const unsigned toTeam)
 		res.energy = 0.0f;
 	}
 
+	// Transfer units - let the modern system handle everything through AllowUnitTransfer
+	// This preserves backward compatibility: old engines continue to work as before,
+	// modern engines (like BAR) get enhanced control via their AllowUnitTransfer handlers
 	const auto& teamUnits = unitHandler.GetUnitsByTeam(teamNum);
 
 	// NB: can not be a ranged loop since ChangeTeam removes [i] from teamUnits on success

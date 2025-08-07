@@ -208,14 +208,18 @@ public:
 	bool GetNewCloakState(bool checkStun);
 
 	// C++-side reasons for changing team.
-	// For the full list of reasons, see 'GG.CHANGETEAM_REASON' in luarules/gadgets.lua
-	// The two enums should be kept in sync for shared values.
+	// @deprecated This enum is deprecated and will be removed in future versions.
+	// Use Lua handlers, the engine should be ignorant of the reasons.
 	enum class ChangeTeamReasonCpp {
-		RECLAIMED = 0,
-		GIVEN     = 1,
-		CAPTURED  = 2,
+		RECLAIMED = 0, // @deprecated Use Lua handlers instead
+		GIVEN     = 1, // @deprecated Use Lua handlers instead
+		CAPTURED  = 2, // @deprecated Use Lua handlers instead
 	};
+	// @deprecated This function is deprecated and will be removed in future versions.
+	// Use Lua handlers instead via SyncedActionFallback.
 	virtual bool ChangeTeam(int team, int reason);
+	// @deprecated Use the reason-based signature instead. This signature is subject to change in future versions.
+	virtual bool ChangeTeam(int team, bool capture);
 	virtual void StopAttackingAllyTeam(int ally);
 
 	//Transporter stuff

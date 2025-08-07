@@ -951,7 +951,13 @@ void CGame::ClientReadNet()
 
 						// ChangeTeam() handles the AllowUnitTransfer() LuaRule
 						if (u->team == srcTeamID && !u->beingBuilt) {
-							u->ChangeTeam(dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN));
+							// @deprecated Direct enum usage is deprecated and will be removed in future versions.
+							// Use Lua handlers instead via SyncedActionFallback.
+							if (!eventHandler.SyncedActionFallback("NetShareTransfer", u->id, srcTeamID, dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN))) {
+								// Lua didn't handle it, use fallback logic
+								// @deprecated This fallback logic is deprecated and will be removed in future versions.
+								u->ChangeTeam(dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN));
+							}
 						}
 					}
 				} catch (const netcode::UnpackPacketException& ex) {
@@ -1091,7 +1097,13 @@ void CGame::ClientReadNet()
 						if (unit->IsCrashing())
 							continue;
 
-						unit->ChangeTeam(dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN));
+						// @deprecated Direct enum usage is deprecated and will be removed in future versions.
+						// Use Lua handlers instead via SyncedActionFallback.
+						if (!eventHandler.SyncedActionFallback("NetShareTransfer", unit->id, srcTeamID, dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN))) {
+							// Lua didn't handle it, use fallback logic
+							// @deprecated This fallback logic is deprecated and will be removed in future versions.
+							unit->ChangeTeam(dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN));
+						}
 					}
 
 					netSelUnits.clear();

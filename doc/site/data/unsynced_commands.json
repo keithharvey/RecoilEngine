@@ -62,7 +62,7 @@
    "atm" : {
       "arguments" : {},
       "cheatRequired" : false,
-      "command" : "Atm",
+      "command" : "ATM",
       "description" : "Redirects command /ATM to its synced processor"
    },
    "buffertext" : {

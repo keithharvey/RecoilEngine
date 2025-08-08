@@ -301,7 +301,7 @@ function gadget:GameFrame(frameNum)
       local curTeam = Spring.GetUnitTeam(front.unitID)
       if (curTeam and (curTeam == front.oldTeam)) then
         -- FIXME: see if newTeam is alive
-        Spring.TransferUnit(front.unitID, front.newTeam, GG.CHANGETEAM_REASON.GIVEN)
+        Spring.TransferUnitWithReason(front.unitID, front.newTeam, GG.TeamTransfer.REASON.GIVEN)
       end
 
       RemoveShare(front.unitID)

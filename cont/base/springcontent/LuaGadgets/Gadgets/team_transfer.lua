@@ -97,7 +97,7 @@ if gadgetHandler:IsSyncedCode() then
 
             local units = Spring.GetTeamUnits(targetTeamID)
             for _, unitID in ipairs(units) do
-                Spring.TransferUnit(unitID, playerData.teamID, false, TeamTransfer.REASON.TAKEN)
+                Spring.TransferUnitWithReason(unitID, playerData.teamID, TeamTransfer.REASON.TAKEN)
             end
 
             local metal, energy = Spring.GetTeamResources(targetTeamID)
@@ -136,7 +136,7 @@ if gadgetHandler:IsSyncedCode() then
                 if not hasHumanPlayer then
                     local units = Spring.GetTeamUnits(teamID)
                     for _, unitID in ipairs(units) do
-                        Spring.TransferUnit(unitID, playerData.teamID, false, TeamTransfer.REASON.TAKEN)
+                        Spring.TransferUnitWithReason(unitID, playerData.teamID, TeamTransfer.REASON.TAKEN)
                     end
 
                     local metal, energy = Spring.GetTeamResources(teamID)
@@ -190,7 +190,7 @@ if gadgetHandler:IsSyncedCode() then
             local units = Spring.GetTeamUnits(targetTeamID)
             local capturedUnits = 0
             for _, unitID in ipairs(units) do
-                local success = Spring.TransferUnit(unitID, playerData.teamID, true, TeamTransfer.REASON.CAPTURED)
+                local success = Spring.TransferUnitWithReason(unitID, playerData.teamID, TeamTransfer.REASON.CAPTURED)
                 if success then
                     capturedUnits = capturedUnits + 1
                 end
@@ -223,7 +223,7 @@ if gadgetHandler:IsSyncedCode() then
                 local units = Spring.GetTeamUnits(teamID)
                 local capturedUnits = 0
                 for _, unitID in ipairs(units) do
-                    local success = Spring.TransferUnit(unitID, playerData.teamID, true, TeamTransfer.REASON.CAPTURED)
+                    local success = Spring.TransferUnitWithReason(unitID, playerData.teamID, TeamTransfer.REASON.CAPTURED)
                     if success then
                         capturedUnits = capturedUnits + 1
                     end

@@ -919,26 +919,29 @@ void CGame::ClientReadNet()
 					CTeam* srcTeam = teamHandler.Team(srcTeamID);
 					CTeam* dstTeam = teamHandler.Team(dstTeamID);
 
-					if (metalShare > 0.0f) {
-						if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "m", metalShare)) {
-							srcTeam->res.metal                       -= metalShare;
-							srcTeam->resSent.metal                   += metalShare;
-							srcTeam->GetCurrentStats().metalSent     += metalShare;
-							dstTeam->res.metal                       += metalShare;
-							dstTeam->resReceived.metal               += metalShare;
-							dstTeam->GetCurrentStats().metalReceived += metalShare;
-						}
-					}
-					if (energyShare > 0.0f) {
-						if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "e", energyShare)) {
-							srcTeam->res.energy                       -= energyShare;
-							srcTeam->resSent.energy                   += energyShare;
-							srcTeam->GetCurrentStats().energySent     += energyShare;
-							dstTeam->res.energy                       += energyShare;
-							dstTeam->resReceived.energy               += energyShare;
-							dstTeam->GetCurrentStats().energyReceived += energyShare;
-						}
-					}
+                    // Give Lua first chance to perform resource transfer atomically
+                    if (!eventHandler.SyncedActionFallback("NetResourceTransfer", srcTeamID, dstTeamID, metalShare, energyShare)) {
+                        if (metalShare > 0.0f) {
+                            if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "m", metalShare)) {
+                                srcTeam->res.metal                       -= metalShare;
+                                srcTeam->resSent.metal                   += metalShare;
+                                srcTeam->GetCurrentStats().metalSent     += metalShare;
+                                dstTeam->res.metal                       += metalShare;
+                                dstTeam->resReceived.metal               += metalShare;
+                                dstTeam->GetCurrentStats().metalReceived += metalShare;
+                            }
+                        }
+                        if (energyShare > 0.0f) {
+                            if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "e", energyShare)) {
+                                srcTeam->res.energy                       -= energyShare;
+                                srcTeam->resSent.energy                   += energyShare;
+                                srcTeam->GetCurrentStats().energySent     += energyShare;
+                                dstTeam->res.energy                       += energyShare;
+                                dstTeam->resReceived.energy               += energyShare;
+                                dstTeam->GetCurrentStats().energyReceived += energyShare;
+                            }
+                        }
+                    }
 
 					for (int32_t i = 0, j = fixedLen; i < numUnitIDs; i++, j += sizeof(short)) {
 						int16_t unitID;
@@ -1056,26 +1059,29 @@ void CGame::ClientReadNet()
 				const float metalShare  = std::clamp(*reinterpret_cast<const float*>(&inbuf[4]), 0.0f, srcTeam->res.metal);
 				const float energyShare = std::clamp(*reinterpret_cast<const float*>(&inbuf[8]), 0.0f, srcTeam->res.energy);
 
-				if (metalShare > 0.0f) {
-					if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "m", metalShare)) {
-						srcTeam->res.metal                       -= metalShare;
-						srcTeam->resSent.metal                   += metalShare;
-						srcTeam->GetCurrentStats().metalSent     += metalShare;
-						dstTeam->res.metal                       += metalShare;
-						dstTeam->resReceived.metal               += metalShare;
-						dstTeam->GetCurrentStats().metalReceived += metalShare;
-					}
-				}
-				if (energyShare > 0.0f) {
-					if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "e", energyShare)) {
-						srcTeam->res.energy                       -= energyShare;
-						srcTeam->resSent.energy                   += energyShare;
-						srcTeam->GetCurrentStats().energySent     += energyShare;
-						dstTeam->res.energy                       += energyShare;
-						dstTeam->resReceived.energy               += energyShare;
-						dstTeam->GetCurrentStats().energyReceived += energyShare;
-					}
-				}
+                // Give Lua first chance to perform resource transfer atomically
+                if (!eventHandler.SyncedActionFallback("NetResourceTransfer", srcTeamID, dstTeamID, metalShare, energyShare)) {
+                    if (metalShare > 0.0f) {
+                        if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "m", metalShare)) {
+                            srcTeam->res.metal                       -= metalShare;
+                            srcTeam->resSent.metal                   += metalShare;
+                            srcTeam->GetCurrentStats().metalSent     += metalShare;
+                            dstTeam->res.metal                       += metalShare;
+                            dstTeam->resReceived.metal               += metalShare;
+                            dstTeam->GetCurrentStats().metalReceived += metalShare;
+                        }
+                    }
+                    if (energyShare > 0.0f) {
+                        if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "e", energyShare)) {
+                            srcTeam->res.energy                       -= energyShare;
+                            srcTeam->resSent.energy                   += energyShare;
+                            srcTeam->GetCurrentStats().energySent     += energyShare;
+                            dstTeam->res.energy                       += energyShare;
+                            dstTeam->resReceived.energy               += energyShare;
+                            dstTeam->GetCurrentStats().energyReceived += energyShare;
+                        }
+                    }
+                }
 
 				if (static_cast<bool>(inbuf[3])) {
 					// share units

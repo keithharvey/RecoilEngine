@@ -276,12 +276,21 @@ function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, reason)
   end
 
   local ud = UnitDefs[unitDefID]
-  local delay = minDelay
-  if (ud) then
-    delay = delay + math.floor(ud.metalCost * costScale)
+  if (not ud) then
+    return true  -- something is borked
   end
 
-  InsertShare(unitID, oldTeam, newTeam, delay)
+  -- compute the share delay
+  local cost = ud.metalCost + (ud.energyCost / 60)
+  local costDelay = math.floor(cost * costScale)
+  local shareDelay = minDelay + costDelay
+
+  local team = teams[oldTeam]
+  if ((team == nil) and (shareDelay <= 0)) then
+    return true  -- share the unit immediately
+  end
+
+  InsertShare(unitID, oldTeam, newTeam, shareDelay)
 
   return false -- delay the transfer
 end

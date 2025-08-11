@@ -510,7 +510,7 @@ class TakeActionExecutor : public ISyncedActionExecutor {
 public:
 	TakeActionExecutor() : ISyncedActionExecutor(
 		"Take",
-		"Transfers all units of allied teams without any active players to the team of the issuing player"
+		"[DEPRECATED] Transfers all units of allied teams without any active players to the team of the issuing player. Use Lua handlers instead."
 	) {}
 
 	bool Execute(const SyncedAction& action) const final {
@@ -524,7 +524,10 @@ public:
 			return true;
 		}
 		
-		// Lua didn't handle it, use the original C++ implementation
+		// Lua didn't handle it, use fallback implementation
+		// @deprecated This fallback is deprecated and will be removed in future versions
+		LOG_L(L_WARNING, "/take command not implemented by Lua, using deprecated fallback");
+		
 		const CPlayer* actionPlayer = playerHandler.Player(playerID);
 
 		if (actionPlayer->spectator && !gs->cheatEnabled)
@@ -563,7 +566,7 @@ class CaptureActionExecutor : public ISyncedActionExecutor {
 public:
 	CaptureActionExecutor() : ISyncedActionExecutor(
 		"Capture",
-		"Captures units and structures from enemy teams"
+		"[DEPRECATED] Captures units and structures from enemy teams. Use Lua handlers instead."
 	) {}
 
 	bool Execute(const SyncedAction& action) const final {
@@ -578,8 +581,8 @@ public:
 		}
 		
 		// Lua didn't handle it, use fallback implementation
-		// @deprecated This fallback is subject to change in future versions
-		LOG_L(L_WARNING, "/capture command not implemented by Lua, using fallback");
+		// @deprecated This fallback is deprecated and will be removed in future versions
+		LOG_L(L_WARNING, "/capture command not implemented by Lua, using deprecated fallback");
 		
 		const CPlayer* actionPlayer = playerHandler.Player(playerID);
 		if (actionPlayer->spectator && !gs->cheatEnabled)

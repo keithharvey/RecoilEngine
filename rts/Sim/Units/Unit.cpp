@@ -1540,8 +1540,6 @@ bool CUnit::ChangeTeam(int newTeam, int reason)
 	// Backward compatibility: determine if this is a capture-type operation
 	const bool capture = reason == static_cast<int>(ChangeTeamReasonCpp::CAPTURED) || reason == static_cast<int>(ChangeTeamReasonCpp::RECLAIMED);
 
-	// Modern behavior is handled via AllowUnitTransfer callin
-	// Legacy behavior for engines without modern Lua handlers:
 	if (capture) {
 		eventHandler.UnitTaken(this, oldTeam, newTeam);
 	} else {
@@ -1595,10 +1593,9 @@ bool CUnit::ChangeTeam(int newTeam, int reason)
 	return true;
 }
 
+// @deprecated This usage is deprecated, use the reason overload instead
 bool CUnit::ChangeTeam(int newTeam, bool capture)
 {
-	// Convert capture boolean to appropriate reason value
-	// @deprecated This enum usage is deprecated and will be removed in future versions.
 	const int reason = capture ? static_cast<int>(ChangeTeamReasonCpp::CAPTURED) : static_cast<int>(ChangeTeamReasonCpp::GIVEN);
 	return ChangeTeam(newTeam, reason);
 }

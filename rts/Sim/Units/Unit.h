@@ -215,10 +215,8 @@ public:
 		GIVEN     = 1, // @deprecated Use Lua handlers instead
 		CAPTURED  = 2, // @deprecated Use Lua handlers instead
 	};
-	// @deprecated This function is deprecated and will be removed in future versions.
-	// Use Lua handlers instead via SyncedActionFallback.
 	virtual bool ChangeTeam(int team, int reason);
-	// @deprecated Use the reason-based signature instead. This signature is subject to change in future versions.
+	// @deprecated Use the `ChangeTeam(int team, int reason)` overload to provide better context to Lua handlers.
 	virtual bool ChangeTeam(int team, bool capture);
 	virtual void StopAttackingAllyTeam(int ally);
 

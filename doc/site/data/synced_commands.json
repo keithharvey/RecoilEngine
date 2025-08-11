@@ -129,12 +129,12 @@
       "arguments" : {},
       "cheatRequired" : false,
       "command" : "Take",
-      "description" : "Transfers units and resources from allied teams without active players"
+      "description" : "Transfers units and resources from allied teams without active players."
    },
    "capture" : {
       "arguments" : {},
       "cheatRequired" : false,
       "command" : "Capture",
-      "description" : "Captures units and structures from enemy teams"
+      "description" : "Captures units and structures from enemy teams."
    }
 }

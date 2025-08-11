@@ -518,8 +518,6 @@ bool CBuilder::UpdateCapture(const Command& fCommand)
 	// let the old owner know that the unit has been captured
 	eventHandler.UnitTaken(curCapturee, team, curCapturee->team);
 	
-	// Modern behavior is handled via AllowUnitTransfer callin (called by ChangeTeam)
-	// This preserves backward compatibility while allowing enhanced Lua control
 	if (!curCapturee->ChangeTeam(team, static_cast<int>(ChangeTeamReasonCpp::CAPTURED))) {
 		// unit is not deletable or something, so stop trying to capture it
 		StopBuild();
@@ -550,6 +548,7 @@ void CBuilder::Update()
 		updated = updated || UpdateBuild(fCommand);
 		updated = updated || UpdateReclaim(fCommand);
 		updated = updated || UpdateResurrect(fCommand);
+		updated = updated || UpdateCapture(fCommand);
 	}
 
 	CUnit::Update();

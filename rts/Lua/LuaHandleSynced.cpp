@@ -727,7 +727,7 @@ bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, int rea
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	LUA_CALL_IN_CHECK(L, true);
-	luaL_checkstack(L, 8, __func__);
+	luaL_checkstack(L, 2 + 5, __func__);
 
 	static const LuaHashString cmdStr(__func__);
 	if (!cmdStr.GetGlobalFunc(L))

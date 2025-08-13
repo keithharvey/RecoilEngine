@@ -1052,12 +1052,6 @@
       "command" : "SpeedUp",
       "description" : "Increases the simulation speed. The engine will try to simulate more frames per second"
    },
-   "take" : {
-      "arguments" : {},
-      "cheatRequired" : false,
-      "command" : "Take",
-      "description" : "Redirects command /Take to its synced processor"
-   },
    "team" : {
       "arguments" : {},
       "cheatRequired" : true,

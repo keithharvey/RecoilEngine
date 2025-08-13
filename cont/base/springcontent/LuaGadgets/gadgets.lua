@@ -1137,9 +1137,9 @@ function gadgetHandler:AllowUnitCreation(unitDefID, builderID, builderTeam, x, y
 end
 
 
-function gadgetHandler:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, capture)
+function gadgetHandler:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, reason)
   for _,g in r_ipairs(self.AllowUnitTransferList) do
-    if (not g:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, capture)) then
+    if (not g:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, reason)) then
       return false
     end
   end

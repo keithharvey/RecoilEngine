@@ -77,6 +77,7 @@
 #include "System/EventHandler.h"
 #include "System/ObjectDependenceTypes.h"
 #include "System/Log/ILog.h"
+#include "LuaCallInCheck.h"
 
 using std::max;
 
@@ -158,6 +159,7 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(CreateUnit);
 	REGISTER_LUA_CFUNC(DestroyUnit);
 	REGISTER_LUA_CFUNC(TransferUnit);
+	REGISTER_LUA_CFUNC(TransferUnitWithReason);
 
 	REGISTER_LUA_CFUNC(CreateFeature);
 	REGISTER_LUA_CFUNC(DestroyFeature);
@@ -1833,18 +1835,56 @@ int LuaSyncedCtrl::DestroyUnit(lua_State* L)
  * @function Spring.TransferUnit
  * @param unitID integer
  * @param newTeamID integer
- * @param given boolean? (Default: `true`) if false, the unit is captured.
+ * @param given boolean (Default: `true`) if false, the unit is captured.
  * @return nil
+ * @deprecated Use Spring.TransferUnitWithReason(unitID, newTeamID, reason) instead
  */
 int LuaSyncedCtrl::TransferUnit(lua_State* L)
 {
 	CheckAllowGameChanges(L);
+	const int args = lua_gettop(L);
+	if (args < 2) //unitID, newTeam, [given]
+		luaL_error(L, "Incorrect arguments to Spring.TransferUnit(unitID, newTeam, [given])");
+
+	const int newTeam = luaL_checkint(L, 2);
+	const bool given = (args >= 3) ? lua_toboolean(L, 3) : true;
+	const int reason = given ? 1 : 2; // 1 = GIVEN, 2 = CAPTURED
+
+	// Convert to the new signature and call TransferUnitWithReason
+	lua_pushvalue(L, 1); // unitID
+	lua_pushvalue(L, 2); // newTeam
+	lua_pushinteger(L, reason);
+	
+	return TransferUnitWithReason(L);
+}
+
+/***
+ * @function Spring.TransferUnitWithReason
+ * @param unitID integer
+ * @param newTeamID integer
+ * @param reason integer - specific reason for the transfer
+ * @return nil
+ */
+int LuaSyncedCtrl::TransferUnitWithReason(lua_State* L)
+{
+	CheckAllowGameChanges(L);
+	const int args = lua_gettop(L);
+	if (args < 3) //unitID, newTeam, reason
+		luaL_error(L, "Incorrect arguments to Spring.TransferUnitWithReason(unitID, newTeam, reason)");
+
 	CUnit* unit = ParseUnit(L, __func__, 1);
 
 	if (unit == nullptr)
 		return 0;
 
+	if (inTransferUnit >= MAX_CMD_RECURSION_DEPTH) {
+		luaL_error(L, "TransferUnit() recursion is not permitted, max depth: %d", MAX_CMD_RECURSION_DEPTH);
+		return 0;
+	}
+
 	const int newTeam = luaL_checkint(L, 2);
+	const int reason = luaL_checkint(L, 3);
+
 	if (!teamHandler.IsValidTeam(newTeam))
 		return 0;
 
@@ -1852,20 +1892,17 @@ int LuaSyncedCtrl::TransferUnit(lua_State* L)
 	if (team == nullptr)
 		return 0;
 
-	bool given = true;
-	if (FullCtrl(L) && lua_isboolean(L, 3))
-		given = lua_toboolean(L, 3);
+	// team is full
+	if (team->AtUnitLimit())
+		return 0;
 
-	if (inTransferUnit >= MAX_CMD_RECURSION_DEPTH)
-		luaL_error(L, "TransferUnit() recursion is not permitted, max depth: %d", MAX_CMD_RECURSION_DEPTH);
-
-	++ inTransferUnit;
+	inTransferUnit++;
 	ASSERT_SYNCED(unit->id);
 	ASSERT_SYNCED((int)newTeam);
-	ASSERT_SYNCED(given);
-	unit->ChangeTeam(newTeam, given ? CUnit::ChangeGiven
-	                                : CUnit::ChangeCaptured);
-	-- inTransferUnit;
+	ASSERT_SYNCED(reason);
+	const bool result = unit->ChangeTeam(newTeam, reason);
+	inTransferUnit--;
+
 	return 0;
 }
 
@@ -4496,7 +4533,7 @@ int LuaSyncedCtrl::CreateFeature(lua_State* L)
 
 /***
  * @function Spring.DestroyFeature
- * @param featureDefID integer
+ * @param featureID integer
  * @return nil
  */
 int LuaSyncedCtrl::DestroyFeature(lua_State* L)
@@ -4520,7 +4557,7 @@ int LuaSyncedCtrl::DestroyFeature(lua_State* L)
 /*** Feature Control
  *
  * @function Spring.TransferFeature
- * @param featureDefID integer
+ * @param featureID integer
  * @param teamID integer
  * @return nil
  */
@@ -7580,17 +7617,4 @@ int LuaSyncedCtrl::RemoveUnitCmdDesc(lua_State* L)
 	if (!FullCtrl(L))
 		return 0;
 
-	CUnit* unit = ParseUnit(L, __func__, 1);
-
-	if (unit == nullptr)
-		return 0;
-
-	// remove last by default
-	unsigned int cmdDescIdx = unit->commandAI->possibleCommands.size() - 1;
-
-	if (lua_isnumber(L, 2))
-		cmdDescIdx = lua_toint(L, 2) - 1;
-
-	unit->commandAI->RemoveCommandDescription(cmdDescIdx);
-	return 0;
-}
+	CUnit* unit = ParseUnit(

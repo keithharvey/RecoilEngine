@@ -515,12 +515,12 @@ bool CBuilder::UpdateCapture(const Command& fCommand)
 	if (curCapturee->captureProgress < 1.0f)
 		return true;
 
-	if (!curCapturee->ChangeTeam(team, CUnit::ChangeCaptured)) {
-		// capture failed
-		if (team == gu->myTeam) {
-			LOG_L(L_WARNING, "%s: Capture failed, unit type limit reached", unitDef->humanName.c_str());
-			eventHandler.LastMessagePosition(pos);
-		}
+	// let the old owner know that the unit has been captured
+	eventHandler.UnitTaken(curCapturee, team, curCapturee->team);
+	
+	if (!curCapturee->ChangeTeam(team, static_cast<int>(ChangeTeamReasonCpp::CAPTURED))) {
+		// unit is not deletable or something, so stop trying to capture it
+		StopBuild();
 	}
 
 	curCapturee->captureProgress = 0.0f;

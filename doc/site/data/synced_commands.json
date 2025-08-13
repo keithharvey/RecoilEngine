@@ -35,12 +35,6 @@
       "command" : "EditDefs",
       "description" : "Allows/Disallows editing of unit-, feature- and weapon-defs through Lua"
    },
-   "give" : {
-      "arguments" : {},
-      "cheatRequired" : true,
-      "command" : "Give",
-      "description" : "Places one or multiple units of a single or multiple types on the map, instantly; by default belonging to your own team"
-   },
    "globallos" : {
       "arguments" : {},
       "cheatRequired" : true,
@@ -113,10 +107,34 @@
       "command" : "Skip",
       "description" : "Fast-forwards to a given frame, or stops fast-forwarding"
    },
+   "spectator" : {
+      "arguments" : {},
+      "cheatRequired" : false,
+      "command" : "Spectator",
+      "description" : "Changes the team of the issuing player to be a spectator"
+   },
+   "start" : {
+      "arguments" : {},
+      "cheatRequired" : false,
+      "command" : "Start",
+      "description" : "Starts the game if all players are ready"
+   },
+   "stop" : {
+      "arguments" : {},
+      "cheatRequired" : false,
+      "command" : "Stop",
+      "description" : "Stops the game"
+   },
    "take" : {
       "arguments" : {},
       "cheatRequired" : false,
       "command" : "Take",
-      "description" : "Transfers all units of allied teams without any active players to the team of the issuing player"
+      "description" : "Transfers units and resources from allied teams without active players."
+   },
+   "capture" : {
+      "arguments" : {},
+      "cheatRequired" : false,
+      "command" : "Capture",
+      "description" : "Captures units and structures from enemy teams."
    }
 }

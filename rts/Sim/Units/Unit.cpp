@@ -1509,18 +1509,23 @@ void CUnit::ChangeLos(int losRad, int airRad)
 }
 
 
-bool CUnit::ChangeTeam(int newteam, ChangeType type)
+bool CUnit::ChangeTeam(int newTeam, int reason)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
+	const int oldTeam = team;
+
+	if (oldTeam == newTeam)
+		return true;
+
 	if (isDead)
 		return false;
 
 	// do not allow unit count violations due to team swapping
 	// (this includes unit captures)
-	if (unitHandler.NumUnitsByTeamAndDef(newteam, unitDef->id) >= unitDef->maxThisUnit)
+	if (unitHandler.NumUnitsByTeamAndDef(newTeam, unitDef->id) >= unitDef->maxThisUnit)
 		return false;
 
-	if (!eventHandler.AllowUnitTransfer(this, newteam, type == ChangeCaptured))
+	if (!eventHandler.AllowUnitTransfer(this, newTeam, reason))
 		return false;
 
 	// do not allow old player to keep controlling the unit
@@ -1529,37 +1534,44 @@ bool CUnit::ChangeTeam(int newteam, ChangeType type)
 		assert(fpsControlPlayer == nullptr);
 	}
 
-	const int oldteam = team;
-
 	selectedUnitsHandler.RemoveUnit(this);
 	SetGroup(nullptr);
 
-	eventHandler.UnitTaken(this, oldteam, newteam);
-	eoh->UnitCaptured(*this, oldteam, newteam);
+	// Backward compatibility: determine if this is a capture-type operation
+	const bool capture = reason == static_cast<int>(ChangeTeamReasonCpp::CAPTURED) || reason == static_cast<int>(ChangeTeamReasonCpp::RECLAIMED);
+
+	if (capture) {
+		eventHandler.UnitTaken(this, oldTeam, newTeam);
+	} else {
+		eventHandler.UnitGiven(this, oldTeam, newTeam);
+	}
+	eoh->UnitCaptured(*this, oldTeam, newTeam);
+
 
 	// remove for old allyteam
 	quadField.RemoveUnit(this);
 
 
-	if (type == ChangeGiven) {
-		teamHandler.Team(oldteam)->RemoveUnit(this, CTeam::RemoveGiven);
-		teamHandler.Team(newteam)->AddUnit(this,    CTeam::AddGiven);
+	if (capture) {
+		teamHandler.Team(oldTeam)->RemoveUnit(this, CTeam::RemoveCaptured);
+		teamHandler.Team(newTeam)->AddUnit(this,    CTeam::AddCaptured);
 	} else {
-		teamHandler.Team(oldteam)->RemoveUnit(this, CTeam::RemoveCaptured);
-		teamHandler.Team(newteam)->AddUnit(this,    CTeam::AddCaptured);
+		teamHandler.Team(oldTeam)->RemoveUnit(this, CTeam::RemoveGiven);
+		teamHandler.Team(newTeam)->AddUnit(this,    CTeam::AddGiven);
 	}
+
 
 	if (!beingBuilt) {
-		teamHandler.Team(oldteam)->resStorage -= storage;
-		teamHandler.Team(newteam)->resStorage += storage;
+		teamHandler.Team(oldTeam)->resStorage -= storage;
+		teamHandler.Team(newTeam)->resStorage += storage;
 	}
 
 
-	team = newteam;
-	allyteam = teamHandler.AllyTeam(newteam);
+	team = newTeam;
+	allyteam = teamHandler.AllyTeam(newTeam);
 	neutral = false;
 
-	unitHandler.ChangeUnitTeam(this, oldteam, newteam);
+	unitHandler.ChangeUnitTeam(this, oldTeam, newTeam);
 
 	for (int at = 0; at < teamHandler.ActiveAllyTeams(); ++at) {
 		if (teamHandler.Ally(at, allyteam)) {
@@ -1574,16 +1586,19 @@ bool CUnit::ChangeTeam(int newteam, ChangeType type)
 	// insert for new allyteam
 	quadField.MovedUnit(this);
 
-	eventHandler.UnitGiven(this, oldteam, newteam);
-	eoh->UnitGiven(*this, oldteam, newteam);
-
 	// reset states and clear the queues
-	if (!teamHandler.AlliedTeams(oldteam, newteam))
+	if (!teamHandler.AlliedTeams(oldTeam, newTeam))
 		ChangeTeamReset();
 
 	return true;
 }
 
+// @deprecated This usage is deprecated, use the reason overload instead
+bool CUnit::ChangeTeam(int newTeam, bool capture)
+{
+	const int reason = capture ? static_cast<int>(ChangeTeamReasonCpp::CAPTURED) : static_cast<int>(ChangeTeamReasonCpp::GIVEN);
+	return ChangeTeam(newTeam, reason);
+}
 
 void CUnit::ChangeTeamReset()
 {

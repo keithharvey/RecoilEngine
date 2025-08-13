@@ -266,11 +266,12 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, capture)
-  if (capture) then
+function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, reason)
+  if ((reason ~= GG.CHANGETEAM_REASON.GIVEN) or (not enabled)) then
     return true
   end
-  if (not enabled) then
+
+  if (Spring.IsCheatingEnabled()) then
     return true
   end
 
@@ -291,7 +292,7 @@ function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, capture)
 
   InsertShare(unitID, oldTeam, newTeam, shareDelay)
 
-  return false
+  return false -- delay the transfer
 end
 
 
@@ -309,10 +310,7 @@ function gadget:GameFrame(frameNum)
       local curTeam = Spring.GetUnitTeam(front.unitID)
       if (curTeam and (curTeam == front.oldTeam)) then
         -- FIXME: see if newTeam is alive
-        local tmp = AllowUnitTransfer
-        AllowUnitTransfer = function() return true end
-        Spring.TransferUnit(front.unitID, front.newTeam)
-        AllowUnitTransfer = tmp
+        Spring.TransferUnitWithReason(front.unitID, front.newTeam, GG.TeamTransfer.REASON.GIVEN)
       end
 
       RemoveShare(front.unitID)
@@ -337,7 +335,7 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-function gadget:UnitDestroyed(unitID, unitDefID, unitTeam)
+function gadget:UnitDestroyed(unitID)
   RemoveShare(unitID)
 end
 
@@ -400,3 +398,13 @@ end
 --------------------------------------------------------------------------------
 --  COMMON
 --------------------------------------------------------------------------------
+
+function gadget:CommandNotify(cmdID, cmdParams, cmdOptions, playerID)
+  if (cmdID == CMD_CANCEL_SHARE) then
+    for _,unitID in ipairs(Spring.GetSelectedUnits(playerID)) do
+      RemoveShare(unitID)
+    end
+    return true -- command was used
+  end
+  return false
+end

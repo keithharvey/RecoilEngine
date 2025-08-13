@@ -60,14 +60,16 @@ class CSyncedLuaHandle : public CLuaHandle
 		bool AllowCommand(const CUnit* unit, const Command& cmd, int playerNum, bool fromSynced, bool fromLua) override;
 
 		std::pair <bool, bool> AllowUnitCreation(const UnitDef* unitDef, const CUnit* builder, const BuildInfo* buildInfo) override;
-		bool AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture) override;
+		bool AllowUnitTransfer(const CUnit* unit, int newTeam, int reason) override;
+		// @deprecated Use the reason-based signature instead. This signature is subject to change in future versions.
+		bool AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture);
 		bool AllowUnitBuildStep(const CUnit* builder, const CUnit* unit, float part) override;
 		bool AllowUnitCaptureStep(const CUnit* builder, const CUnit* unit, float part) override;
 		bool AllowUnitTransport(const CUnit* transporter, const CUnit* transportee) override;
 		bool AllowUnitTransportLoad(const CUnit* transporter, const CUnit* transportee, const float3& loadPos, bool allowed) override;
 		bool AllowUnitTransportUnload(const CUnit* transporter, const CUnit* transportee, const float3& unloadPos, bool allowed) override;
 		bool AllowUnitCloak(const CUnit* unit, const CUnit* enemy) override;
-		bool AllowUnitDecloak(const CUnit* unit, const CSolidObject* object, const CWeapon* weapon) override;
+		bool AllowUnitDecloak(const CUnit* unit, const CSolidObject* o, const CWeapon* w) override;
 		bool AllowUnitKamikaze(const CUnit* unit, const CUnit* target, bool allowed) override;
 		bool AllowFeatureCreation(const FeatureDef* featureDef, int allyTeamID, const float3& pos) override;
 		bool AllowFeatureBuildStep(const CUnit* builder, const CFeature* feature, float part) override;
@@ -122,7 +124,7 @@ class CSyncedLuaHandle : public CLuaHandle
 			const float3& hitPos
 		) override;
 
-		bool SyncedActionFallback(const std::string& line, int playerID) override;
+		bool SyncedActionFallback(const std::string& msg, int playerID) override;
 
 	protected:
 		CSyncedLuaHandle(CSplitLuaHandle* base, const std::string& name, int order);

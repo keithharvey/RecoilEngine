@@ -483,29 +483,6 @@ public:
 };
 
 
-class SkipActionExecutor : public ISyncedActionExecutor {
-public:
-	SkipActionExecutor() : ISyncedActionExecutor("Skip", "Fast-forwards to a given frame, or stops fast-forwarding") {
-	}
-
-	bool Execute(const SyncedAction& action) const final {
-		if (action.GetArgs().find_first_of("start") == 0) {
-			std::istringstream buf(action.GetArgs().substr(6));
-			int targetFrame;
-			buf >> targetFrame;
-			game->StartSkip(targetFrame);
-			LOG("Skipping to frame %i", targetFrame);
-		}
-		else if (action.GetArgs() == "end") {
-			game->EndSkip();
-			LOG("Skip finished");
-		} else {
-			LOG_L(L_WARNING, "/%s: wrong syntax", GetCommand().c_str());
-		}
-		return true;
-	}
-};
-
 class TakeActionExecutor : public ISyncedActionExecutor {
 public:
 	TakeActionExecutor() : ISyncedActionExecutor(
@@ -624,6 +601,30 @@ public:
 	}
 };
 
+
+class SkipActionExecutor : public ISyncedActionExecutor {
+public:
+	SkipActionExecutor() : ISyncedActionExecutor("Skip", "Fast-forwards to a given frame, or stops fast-forwarding") {
+	}
+
+	bool Execute(const SyncedAction& action) const final {
+		if (action.GetArgs().find_first_of("start") == 0) {
+			std::istringstream buf(action.GetArgs().substr(6));
+			int targetFrame;
+			buf >> targetFrame;
+			game->StartSkip(targetFrame);
+			LOG("Skipping to frame %i", targetFrame);
+		}
+		else if (action.GetArgs() == "end") {
+			game->EndSkip();
+			LOG("Skip finished");
+		} else {
+			LOG_L(L_WARNING, "/%s: wrong syntax", GetCommand().c_str());
+		}
+		return true;
+	}
+};
+
 } // namespace (unnamed)
 
 
@@ -651,9 +652,9 @@ void SyncedGameCommands::AddDefaultActionExecutors()
 	AddActionExecutor(AllocActionExecutor<LuaGaiaActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<DesyncActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<AtmActionExecutor>());
-	AddActionExecutor(AllocActionExecutor<SkipActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<TakeActionExecutor>());
 	AddActionExecutor(AllocActionExecutor<CaptureActionExecutor>());
+	AddActionExecutor(AllocActionExecutor<SkipActionExecutor>());
 }
 
 

@@ -1543,28 +1543,19 @@ bool CUnit::ChangeTeam(int newTeam, bool capture)
 	selectedUnitsHandler.RemoveUnit(this);
 	SetGroup(nullptr);
 
-	// Backward compatibility: determine if this is a capture-type operation
-	const bool capture = reason == static_cast<int>(ChangeTeamReasonCpp::CAPTURED) || reason == static_cast<int>(ChangeTeamReasonCpp::RECLAIMED);
-
 	if (capture) {
 		eventHandler.UnitTaken(this, oldTeam, newTeam);
-	} else {
-		eventHandler.UnitGiven(this, oldTeam, newTeam);
-	}
-	eoh->UnitCaptured(*this, oldTeam, newTeam);
-
-
-	// remove for old allyteam
-	quadField.RemoveUnit(this);
-
-
-	if (capture) {
 		teamHandler.Team(oldTeam)->RemoveUnit(this, CTeam::RemoveCaptured);
 		teamHandler.Team(newTeam)->AddUnit(this,    CTeam::AddCaptured);
 	} else {
+		eventHandler.UnitGiven(this, oldTeam, newTeam);
 		teamHandler.Team(oldTeam)->RemoveUnit(this, CTeam::RemoveGiven);
 		teamHandler.Team(newTeam)->AddUnit(this,    CTeam::AddGiven);
 	}
+	eoh->UnitCaptured(*this, oldTeam, newTeam);
+
+	// remove for old allyteam
+	quadField.RemoveUnit(this);
 
 
 	if (!beingBuilt) {
@@ -1599,12 +1590,6 @@ bool CUnit::ChangeTeam(int newTeam, bool capture)
 	return true;
 }
 
-// @deprecated This usage is deprecated, use the reason overload instead
-bool CUnit::ChangeTeam(int newTeam, bool capture)
-{
-	const int reason = capture ? static_cast<int>(ChangeTeamReasonCpp::CAPTURED) : static_cast<int>(ChangeTeamReasonCpp::GIVEN);
-	return ChangeTeam(newTeam, reason);
-}
 
 void CUnit::ChangeTeamReset()
 {

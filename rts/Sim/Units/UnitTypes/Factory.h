@@ -37,7 +37,7 @@ public:
 
 	void KillUnit(CUnit* attacker, bool selfDestruct, bool reclaimed, int weaponDefID) override;
 	void PreInit(const UnitLoadParams& params) override;
-	bool ChangeTeam(int newTeam, int reason) override;
+	bool ChangeTeam(int newTeam, bool capture = false) override;
 
 	const NanoPieceCache& GetNanoPieceCache() const { return nanoPieceCache; }
 	      NanoPieceCache& GetNanoPieceCache()       { return nanoPieceCache; }

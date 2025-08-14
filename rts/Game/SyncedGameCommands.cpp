@@ -577,7 +577,7 @@ public:
 			const auto& teamUnits = unitHandler.GetUnitsByTeam(a);
 			for (CUnit* unit : teamUnits) {
 				if (unit != nullptr && !unit->isDead) {
-					unit->ChangeTeam(actionPlayer->team, static_cast<int>(CUnit::ChangeTeamReasonCpp::CAPTURED));
+					unit->ChangeTeam(actionPlayer->team, true);
 				}
 			}
 

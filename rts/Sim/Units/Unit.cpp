@@ -1514,7 +1514,7 @@ void CUnit::ChangeLos(int losRad, int airRad)
 }
 
 
-bool CUnit::ChangeTeam(int newTeam, int reason)
+bool CUnit::ChangeTeam(int newTeam, bool capture)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	// @deprecated This function is deprecated. Lua handlers should handle all unit transfers via SyncedActionFallback.
@@ -1531,7 +1531,6 @@ bool CUnit::ChangeTeam(int newTeam, int reason)
 	if (unitHandler.NumUnitsByTeamAndDef(newTeam, unitDef->id) >= unitDef->maxThisUnit)
 		return false;
 
-	const bool capture = reason == static_cast<int>(ChangeTeamReasonCpp::CAPTURED) || reason == static_cast<int>(ChangeTeamReasonCpp::RECLAIMED);
 	if (!eventHandler.AllowUnitTransfer(this, newTeam, capture))
 		return false;
 

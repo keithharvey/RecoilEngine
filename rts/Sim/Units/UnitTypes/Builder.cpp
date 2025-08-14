@@ -519,10 +519,10 @@ bool CBuilder::UpdateCapture(const Command& fCommand)
 	eventHandler.UnitTaken(curCapturee, team, curCapturee->team);
 	
 	// Check if Lua has registered a handler for builder capture
-	if (!eventHandler.SyncedActionFallback("BuilderCapture", curCapturee->id, curCapturee->team, team, static_cast<int>(ChangeTeamReasonCpp::CAPTURED))) {
+	if (!eventHandler.SyncedActionFallback("BuilderCapture", curCapturee->id, curCapturee->team, team, true)) {
 		// Lua didn't handle it, use fallback logic
 		// @deprecated This fallback logic is deprecated and will be removed in future versions.
-		if (!curCapturee->ChangeTeam(team, static_cast<int>(ChangeTeamReasonCpp::CAPTURED))) {
+		if (!curCapturee->ChangeTeam(team, true)) {
 			// unit is not deletable or something, so stop trying to capture it
 			StopBuild();
 		}

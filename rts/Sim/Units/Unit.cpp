@@ -1517,6 +1517,7 @@ void CUnit::ChangeLos(int losRad, int airRad)
 bool CUnit::ChangeTeam(int newTeam, int reason)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
+	// @deprecated This function is deprecated. Lua handlers should handle all unit transfers via SyncedActionFallback.
 	const int oldTeam = team;
 
 	if (oldTeam == newTeam)

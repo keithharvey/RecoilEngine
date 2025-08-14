@@ -216,6 +216,9 @@ public:
 		CAPTURED  = 2, // @deprecated Use Lua handlers instead
 	};
 	virtual bool ChangeTeam(int team, int reason);
+	// @deprecated This function is deprecated. Use Lua handlers via SyncedActionFallback instead.
+	// The engine should be ignorant of transfer reasons - let Lua handle all sharing logic.
+	virtual bool ChangeTeam(int team, int reason);
 	// @deprecated Use the `ChangeTeam(int team, int reason)` overload to provide better context to Lua handlers.
 	virtual bool ChangeTeam(int team, bool capture);
 	virtual void StopAttackingAllyTeam(int ally);

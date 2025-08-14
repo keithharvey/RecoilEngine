@@ -519,6 +519,13 @@ void CFactory::AssignBuildeeOrders(CUnit* unit) {
 bool CFactory::ChangeTeam(int newTeam, int reason)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
+	
+	// Check if Lua has registered a handler for factory team change
+	if (eventHandler.SyncedActionFallback("FactoryTeamChange", id, newTeam, reason)) {
+		return CBuilding::ChangeTeam(newTeam, reason);
+	}
+	
+	// @deprecated This fallback logic is deprecated and will be removed in future versions.
 	if (curBuild != nullptr) {
 		if (team == newTeam) {
 			// our team is not changing, so we can continue building

@@ -215,7 +215,6 @@ public:
 		GIVEN     = 1, // @deprecated Use Lua handlers instead
 		CAPTURED  = 2, // @deprecated Use Lua handlers instead
 	};
-	virtual bool ChangeTeam(int team, int reason);
 	// @deprecated This function is deprecated. Use Lua handlers via SyncedActionFallback instead.
 	// The engine should be ignorant of transfer reasons - let Lua handle all sharing logic.
 	virtual bool ChangeTeam(int team, int reason);

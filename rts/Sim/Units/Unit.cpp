@@ -1530,7 +1530,9 @@ bool CUnit::ChangeTeam(int newTeam, int reason)
 	if (unitHandler.NumUnitsByTeamAndDef(newTeam, unitDef->id) >= unitDef->maxThisUnit)
 		return false;
 
-	if (!eventHandler.AllowUnitTransfer(this, newTeam, reason))
+	// determine if this is a capture-type operation for legacy hook
+	const bool capture = (reason == static_cast<int>(ChangeTeamReasonCpp::CAPTURED)) || (reason == static_cast<int>(ChangeTeamReasonCpp::RECLAIMED));
+	if (!eventHandler.AllowUnitTransfer(this, newTeam, capture))
 		return false;
 
 	// do not allow old player to keep controlling the unit
@@ -1542,8 +1544,7 @@ bool CUnit::ChangeTeam(int newTeam, int reason)
 	selectedUnitsHandler.RemoveUnit(this);
 	SetGroup(nullptr);
 
-	// Backward compatibility: determine if this is a capture-type operation
-	const bool capture = reason == static_cast<int>(ChangeTeamReasonCpp::CAPTURED) || reason == static_cast<int>(ChangeTeamReasonCpp::RECLAIMED);
+	// capture already determined above
 
 	if (capture) {
 		eventHandler.UnitTaken(this, oldTeam, newTeam);

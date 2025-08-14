@@ -1,6 +1,7 @@
 /* This file is part of the Spring engine (GPL v2 or later), see LICENSE.html */
 
 #include <cinttypes>
+#include <string>
 
 #include "Game/Game.h"
 #include "GameServer.h"
@@ -953,7 +954,7 @@ void CGame::ClientReadNet()
 						if (u->team == srcTeamID && !u->beingBuilt) {
 							// @deprecated Direct enum usage is deprecated and will be removed in future versions.
 							// Use Lua handlers instead via SyncedActionFallback.
-							if (!eventHandler.SyncedActionFallback("NetShareTransfer", u->id, srcTeamID, dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN))) {
+							if (!eventHandler.SyncedActionFallback("NetShareTransfer " + std::to_string(u->id) + " " + std::to_string(srcTeamID) + " " + std::to_string(dstTeamID) + " " + std::to_string(static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN)), 0)) {
 								// Lua didn't handle it, use fallback logic
 								// @deprecated This fallback logic is deprecated and will be removed in future versions.
 								u->ChangeTeam(dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN));
@@ -1057,7 +1058,7 @@ void CGame::ClientReadNet()
 				const float energyShare = std::clamp(*reinterpret_cast<const float*>(&inbuf[8]), 0.0f, srcTeam->res.energy);
 
                 // Give Lua first chance to perform resource transfer atomically
-                if (!eventHandler.SyncedActionFallback("NetResourceTransfer", srcTeamID, dstTeamID, metalShare, energyShare)) {
+                if (!eventHandler.SyncedActionFallback("NetResourceTransfer " + std::to_string(srcTeamID) + " " + std::to_string(dstTeamID) + " " + std::to_string(metalShare) + " " + std::to_string(energyShare), 0)) {
                     if (metalShare > 0.0f) {
                         if (eventHandler.AllowResourceTransfer(srcTeamID, dstTeamID, "m", metalShare)) {
                             srcTeam->res.metal                       -= metalShare;
@@ -1102,7 +1103,7 @@ void CGame::ClientReadNet()
 
 						// @deprecated Direct enum usage is deprecated and will be removed in future versions.
 						// Use Lua handlers instead via SyncedActionFallback.
-						if (!eventHandler.SyncedActionFallback("NetShareTransfer", unit->id, srcTeamID, dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN))) {
+						if (!eventHandler.SyncedActionFallback("NetShareTransfer " + std::to_string(unit->id) + " " + std::to_string(srcTeamID) + " " + std::to_string(dstTeamID) + " " + std::to_string(static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN)), 0)) {
 							// Lua didn't handle it, use fallback logic
 							// @deprecated This fallback logic is deprecated and will be removed in future versions.
 							unit->ChangeTeam(dstTeamID, static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN));

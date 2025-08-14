@@ -720,10 +720,10 @@ std::pair <bool, bool> CSyncedLuaHandle::AllowUnitCreation(
  * @param unitDefID integer
  * @param oldTeam integer
  * @param newTeam integer
- * @param reason integer
+ * @param capture boolean
  * @return false to disallow unit transfer
  */
-bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, int reason)
+bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	LUA_CALL_IN_CHECK(L, true);
@@ -737,7 +737,7 @@ bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, int rea
 	lua_pushnumber(L, unit->unitDef->id);
 	lua_pushnumber(L, unit->team);
 	lua_pushnumber(L, newTeam);
-	lua_pushnumber(L, reason);
+	lua_pushboolean(L, capture);
 
 	// call the function
 	if (!RunCallIn(L, cmdStr, 5, 1))
@@ -747,26 +747,6 @@ bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, int rea
 	const bool allow = luaL_optboolean(L, -1, true);
 	lua_pop(L, 1);
 	return allow;
-}
-
-/*** Called just before a unit is transferred to a different team.
- * @deprecated This signature is deprecated. Use the reason-based signature instead.
- * The reason parameter provides better context for transfer decisions.
- *
- * @function SyncedCallins:AllowUnitTransfer
- * @param unitID integer
- * @param unitDefID integer
- * @param oldTeam integer
- * @param newTeam integer
- * @param capture boolean
- * @return false to disallow unit transfer
- */
-bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture)
-{
-	// Convert capture boolean to appropriate reason value
-	// @deprecated This enum usage is deprecated and will be removed in future versions.
-	const int reason = capture ? static_cast<int>(CUnit::ChangeTeamReasonCpp::CAPTURED) : static_cast<int>(CUnit::ChangeTeamReasonCpp::GIVEN);
-	return AllowUnitTransfer(unit, newTeam, reason);
 }
 
 /*** Called just before a unit progresses its build percentage.

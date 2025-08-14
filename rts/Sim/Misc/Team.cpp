@@ -21,6 +21,7 @@
 #include "System/creg/STL_Set.h"
 #include "System/creg/STL_List.h"
 #include "System/creg/STL_Map.h"
+#include <string>
 
 #include "System/Misc/TracyDefs.h"
 
@@ -216,7 +217,7 @@ void CTeam::GiveEverythingTo(const unsigned toTeam)
 {
     // First, allow Lua to handle giving all units and resources.
     // If Lua returns true, it took care of transfers and we can exit.
-    if (eventHandler.SyncedActionFallback("TeamGiveEverything", teamNum, toTeam)) {
+    if (eventHandler.SyncedActionFallback("TeamGiveEverything " + std::to_string(teamNum) + " " + std::to_string(toTeam), 0)) {
         return;
     }
 	RECOIL_DETAILED_TRACY_ZONE;

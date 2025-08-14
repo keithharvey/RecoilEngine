@@ -1512,6 +1512,10 @@ void CUnit::ChangeLos(int losRad, int airRad)
 bool CUnit::ChangeTeam(int newteam, ChangeType type)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
+	const int oldTeam = team;
+
+	if (oldTeam == newTeam)
+		return true;
 	if (isDead)
 		return false;
 
@@ -1534,20 +1538,20 @@ bool CUnit::ChangeTeam(int newteam, ChangeType type)
 	selectedUnitsHandler.RemoveUnit(this);
 	SetGroup(nullptr);
 
-	eventHandler.UnitTaken(this, oldteam, newteam);
+	if (type == ChangeCaptured) {
+		eventHandler.UnitTaken(this, oldteam, newteam);
+		teamHandler.Team(oldteam)->RemoveUnit(this, CTeam::RemoveCaptured);
+		teamHandler.Team(newteam)->AddUnit(this,    CTeam::AddCaptured);
+	} else {
+		eventHandler.UnitGiven(this, oldteam, newteam);
+		teamHandler.Team(oldteam)->RemoveUnit(this, CTeam::RemoveGiven);
+		teamHandler.Team(newteam)->AddUnit(this,    CTeam::AddGiven);
+	}
+
 	eoh->UnitCaptured(*this, oldteam, newteam);
 
 	// remove for old allyteam
 	quadField.RemoveUnit(this);
-
-
-	if (type == ChangeGiven) {
-		teamHandler.Team(oldteam)->RemoveUnit(this, CTeam::RemoveGiven);
-		teamHandler.Team(newteam)->AddUnit(this,    CTeam::AddGiven);
-	} else {
-		teamHandler.Team(oldteam)->RemoveUnit(this, CTeam::RemoveCaptured);
-		teamHandler.Team(newteam)->AddUnit(this,    CTeam::AddCaptured);
-	}
 
 	if (!beingBuilt) {
 		teamHandler.Team(oldteam)->resStorage -= storage;

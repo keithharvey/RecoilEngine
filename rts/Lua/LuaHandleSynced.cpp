@@ -721,7 +721,7 @@ std::pair <bool, bool> CSyncedLuaHandle::AllowUnitCreation(
  * @param oldTeam integer
  * @param newTeam integer
  * @param capture boolean
- * @return boolean whether or not the transfer is permitted.
+ * @return false to disallow unit transfer
  */
 bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture)
 {
@@ -743,13 +743,10 @@ bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, bool ca
 	if (!RunCallIn(L, cmdStr, 5, 1))
 		return true;
 
-	// get the results
 	const bool allow = luaL_optboolean(L, -1, true);
 	lua_pop(L, 1);
 	return allow;
 }
-
-
 /*** Called just before a unit progresses its build percentage.
  *
  * @function SyncedCallins:AllowUnitBuildStep

@@ -53,9 +53,7 @@ public:
 	void SetLastMsgPos(const float3& pos);
 	void AddNotification(const float3& pos, const float3& color, float alpha);
 
-	// @deprecated This function is deprecated. AI resource transfers should use Lua handlers via SyncedActionFallback.
 	bool SendResources(float mAmount, float eAmount, int receivingTeamId);
-	// @deprecated This function is deprecated. AI unit transfers should use Lua handlers via SyncedActionFallback.
 	int SendUnits(const std::vector<int>& unitIds, int receivingTeamId);
 
 	bool PosInCamera(const float3& pos, float radius);

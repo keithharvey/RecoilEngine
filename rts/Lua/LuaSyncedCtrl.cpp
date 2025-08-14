@@ -1852,6 +1852,9 @@ int LuaSyncedCtrl::TransferUnit(lua_State* L)
 	if (team == nullptr)
 		return 0;
 
+	if (team->AtUnitLimit())
+		return 0;
+
 	bool given = true;
 	if (FullCtrl(L) && lua_isboolean(L, 3))
 		given = lua_toboolean(L, 3);
@@ -1859,15 +1862,15 @@ int LuaSyncedCtrl::TransferUnit(lua_State* L)
 	if (inTransferUnit >= MAX_CMD_RECURSION_DEPTH)
 		luaL_error(L, "TransferUnit() recursion is not permitted, max depth: %d", MAX_CMD_RECURSION_DEPTH);
 
-	++ inTransferUnit;
+	inTransferUnit++;
 	ASSERT_SYNCED(unit->id);
 	ASSERT_SYNCED((int)newTeam);
 	ASSERT_SYNCED(given);
-	unit->ChangeTeam(newTeam, given ? CUnit::ChangeGiven
-	                                : CUnit::ChangeCaptured);
-	-- inTransferUnit;
+	unit->ChangeTeam(newTeam, given ? CUnit::ChangeGiven : CUnit::ChangeCaptured);
+	inTransferUnit--;
 	return 0;
 }
+
 
 /******************************************************************************
  * Unit Control

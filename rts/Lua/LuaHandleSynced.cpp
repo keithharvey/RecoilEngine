@@ -885,98 +885,6 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 }
 
 
-/**
- * @brief Handles resource excess redistribution via registered controller.
- * 
- * This emulates a per-gadget callin pattern to measure the full API overhead.
- * Unlike ProcessEconomy where C++ pre-builds team data, here:
- * 1. C++ only passes the excesses table (teamID -> {metal, energy} excess).
- * 2. Lua must query Spring.GetTeamResources() to build team data.
- * 3. Lua runs the solver AND applies results via Spring.SetTeamResource.
- * 4. Lua returns a boolean indicating success.
- * 
- * This measures the real cost of the "flexible" per-gadget API pattern where
- * each gadget queries engine state independently vs ProcessEconomy's centralized
- * controller where C++ builds the data once.
- * 
- * Breakpoints are recorded for audit comparison:
- * - CppMunge: Minimal - just pushing the excesses table.
- * - LuaTotal: All Lua work (API queries + solver + setters + logging).
- *
- * @param excesses Map of teamID to its calculated SResourcePack excess.
- * @return bool Whether the excess event was successfully handled.
- */
-bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& excesses)
-{
-	ZoneScopedN("ResourceExcess");
-
-	if (!IsValid())
-		return false;
-
-	if (resourceExcessRef == LUA_NOREF)
-		return false;
-
-	economyAudit.Begin("RE", gs->frameNum);
-
-	LUA_CALL_IN_CHECK(L, true);
-	lua_checkstack(L, 8);
-
-	// Get the controller function from registry
-	lua_rawgeti(L, LUA_REGISTRYINDEX, resourceExcessRef);
-	if (!lua_isfunction(L, -1)) {
-		lua_pop(L, 1);
-		LOG_L(L_ERROR, "[ResourceExcess] frame=%d - Controller ref=%d is NOT a function!", gs->frameNum, resourceExcessRef);
-		economyAudit.End();
-		return false;
-	}
-
-	// Push gameFrame
-	lua_pushnumber(L, gs->frameNum);
-
-	{
-		ZoneScopedN("RE_CppMunge");
-
-		// Push excesses table only - Lua must query Spring API for team data
-		// This emulates the per-gadget callin pattern where each gadget does its own lookups
-		lua_newtable(L);
-		for (const auto& [teamID, excess] : excesses) {
-			lua_pushnumber(L, teamID);
-			lua_newtable(L);
-			
-			lua_pushliteral(L, "metal");
-			lua_pushnumber(L, excess.metal);
-			lua_rawset(L, -3);
-			
-			lua_pushliteral(L, "energy");
-			lua_pushnumber(L, excess.energy);
-			lua_rawset(L, -3);
-			
-			lua_rawset(L, -3);
-		}
-	}
-
-	economyAudit.Breakpoint("CppMunge");
-	economyAudit.SaveCheckpoint(); // Save time before entering Lua
-
-	// Call the Lua controller - Lua does ALL the work including API queries
-	if (lua_pcall(L, 2, 1, 0) != 0) {
-		const char* err = lua_tostring(L, -1);
-		LOG_L(L_ERROR, "[ResourceExcess] frame=%d - Lua pcall error: %s", gs->frameNum, err ? err : "unknown");
-		lua_pop(L, 1);
-		economyAudit.End();
-		return false;
-	}
-
-	economyAudit.BreakpointAbsolute("LuaTotal"); // Measures from checkpoint (all Lua time)
-
-	const bool handled = luaL_optboolean(L, -1, false);
-	lua_pop(L, 1);
-
-	economyAudit.End();
-
-	return handled;
-}
- 
 /*** Called when the command is given, before the unit's queue is altered.
  *
  * @function SyncedCallins:AllowCommand
@@ -1604,6 +1512,46 @@ bool CSyncedLuaHandle::AllowResourceTransfer(int oldTeam, int newTeam, const cha
 	lua_pop(L, 1);
 	return allow;
 }
+
+/*** Called when excess resources are added.
+ * Fires every frame in resource_excess mode (Sprung's approach).
+ *
+ * @function SyncedCallins:ResourceExcess
+ * @param excesses table<teamID, {metal, energy}>
+ * @return boolean whether or not Lua handled the event
+ */
+bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& excesses)
+{
+	ZoneScopedN("ResourceExcess");
+	LUA_CALL_IN_CHECK(L, true);
+	luaL_checkstack(L, 3, __func__);
+
+	static const LuaHashString cmdStr(__func__);
+	if (!cmdStr.GetGlobalFunc(L))
+		return false;
+
+	{
+		ZoneScopedN("RE_BuildTable");
+		lua_createtable(L, excesses.size(), 1);
+
+		for (const auto &[teamID, excess] : excesses) {
+			lua_createtable(L, excess.MAX_RESOURCES, 0);
+			for (const auto &[resourceID, resource] : std::views::enumerate(excess)) {
+				lua_pushnumber(L, resource);
+				lua_rawseti(L, -2, resourceID + 1);
+			}
+			lua_rawseti(L, -2, teamID);
+		}
+	}
+
+	if (!RunCallIn(L, cmdStr, 1, 1))
+		return false;
+
+	const bool handled = luaL_optboolean(L, -1, false);
+	lua_pop(L, 1);
+	return handled;
+}
+
 
 /*** Determines if this unit can be controlled directly in FPS view.
  *

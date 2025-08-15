@@ -125,30 +125,43 @@ void CTeamHandler::AccumulateFrameExcess()
 	}
 }
 
+void CTeamHandler::HandleFrameExcess()
+{
+	std::map <int, SResourcePack> excesses;
+	for (const auto &team : teams)
+		excesses.emplace(team.teamNum, team.resExcessThisFrame);
+
+	/* Note that `resDelayedShare` is a metaaccumulator,
+	 * the reason to have this two-layer accumulation is
+	 * that handling excess right when it happens would
+	 * be too expensive (for example you can have tens of
+	 * thousands of windgens each generating a resource
+	 * instance), having the Lua event handled at slow
+	 * update would reduce control, and having the engine
+	 * handle excess natively outside slow update would
+	 * be inconsistent with other native resource handling. */
+	if (!eventHandler.ResourceExcess(excesses))
+		for (auto &team : teams)
+			team.resDelayedShare += team.resExcessThisFrame;
+
+	for (auto &team : teams)
+		team.resExcessThisFrame = 0.0f;
+}
+
 void CTeamHandler::GameFrame(int frameNum)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 
-	// Accumulate excess every frame
-	AccumulateFrameExcess();
+	// ResourceExcess mode: Sprung's approach - fire event every frame
+	// ProcessEconomy mode: Accumulate and defer to SlowUpdate
+	if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_RESOURCE_EXCESS) {
+		HandleFrameExcess();
+	} else {
+		AccumulateFrameExcess();
+	}
 
 	if ((frameNum % TEAM_SLOWUPDATE_RATE) != 0)
 		return;
-
-	// Debug: log every 1200 frames to trace economy mode dispatch
-	if (frameNum % 1200 == 0) {
-		static const char* modeNames[] = {
-			"OFF",           // ECONOMY_AUDIT_OFF
-			"PROCESS_ECONOMY", // ECONOMY_AUDIT_PROCESS_ECONOMY
-			"RESOURCE_EXCESS", // ECONOMY_AUDIT_RESOURCE_EXCESS
-			"ALTERNATE"       // ECONOMY_AUDIT_ALTERNATE
-		};
-		const char* modeName = (modInfo.economy_audit_mode >= 0 && modInfo.economy_audit_mode < 4)
-			? modeNames[modInfo.economy_audit_mode] : "UNKNOWN";
-
-		LOG("[TeamHandler] frame=%d mode=%s game_economy=%s",
-			frameNum, modeName, modInfo.game_economy ? "true" : "false");
-	}
 
 	for (int a = 0; a < ActiveTeams(); ++a) {
 		teams[a].ResetResourceState();
@@ -157,21 +170,9 @@ void CTeamHandler::GameFrame(int frameNum)
 		teams[a].SlowUpdate();
 	}
 
-	// Economy callins - one path or the other for game_economy mode
+	// ProcessEconomy callin - deferred approach (once per SlowUpdate)
 	if (modInfo.ShouldRunProcessEconomy(frameNum)) {
-		// ProcessEconomy: reads resDelayedShare via Lua API, zeros it after
 		eventHandler.ProcessEconomy(frameNum);
-	} else if (modInfo.ShouldRunResourceExcess(frameNum)) {
-		// ResourceExcess: always called for continuous monitoring, receives accumulated excess as parameter
-		std::map<int, SResourcePack> excesses;
-		for (const auto &team : teams)
-			excesses.emplace(team.teamNum, team.resDelayedShare);
-
-		if (eventHandler.ResourceExcess(excesses)) {
-			// Lua handled it - clear the accumulator
-			for (auto &team : teams)
-				team.resDelayedShare = 0.0f;
-		}
 	}
 }
 

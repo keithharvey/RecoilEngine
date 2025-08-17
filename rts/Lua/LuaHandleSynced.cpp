@@ -729,6 +729,12 @@ bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, bool ca
 	LUA_CALL_IN_CHECK(L, true);
 	luaL_checkstack(L, 2 + 5, __func__);
 
+	static bool s_warnedAllowUnitTransfer = false;
+	if (!s_warnedAllowUnitTransfer) {
+		LOG_L(L_WARNING, "SyncedCallins:AllowUnitTransfer is deprecated and will be removed in a future engine version. Use Lua handlers that do not depend on engine-side reasons.");
+		s_warnedAllowUnitTransfer = true;
+	}
+
 	static const LuaHashString cmdStr(__func__);
 	if (!cmdStr.GetGlobalFunc(L))
 		return true; // the call is not defined

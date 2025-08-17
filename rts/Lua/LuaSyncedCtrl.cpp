@@ -159,7 +159,6 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(CreateUnit);
 	REGISTER_LUA_CFUNC(DestroyUnit);
 	REGISTER_LUA_CFUNC(TransferUnit);
-	REGISTER_LUA_CFUNC(TransferUnitWithReason);
 
 	REGISTER_LUA_CFUNC(CreateFeature);
 	REGISTER_LUA_CFUNC(DestroyFeature);
@@ -1846,7 +1845,6 @@ int LuaSyncedCtrl::DestroyUnit(lua_State* L)
  * @param newTeamID integer
  * @param given boolean (Default: `true`) if false, the unit is captured.
  * @return nil
- * @deprecated Use Spring.TransferUnitWithReason(unitID, newTeamID, reason) instead
  */
 int LuaSyncedCtrl::TransferUnit(lua_State* L)
 {
@@ -1855,34 +1853,7 @@ int LuaSyncedCtrl::TransferUnit(lua_State* L)
 	if (args < 2) //unitID, newTeam, [given]
 		luaL_error(L, "Incorrect arguments to Spring.TransferUnit(unitID, newTeam, [given])");
 
-	const int newTeam = luaL_checkint(L, 2);
-	const bool given = (args >= 3) ? lua_toboolean(L, 3) : true;
-	const int reason = given ? 1 : 2; // 1 = GIVEN, 2 = CAPTURED
-
-	// Convert to the new signature and call TransferUnitWithReason
-	lua_pushvalue(L, 1); // unitID
-	lua_pushvalue(L, 2); // newTeam
-	lua_pushinteger(L, reason);
-	
-	return TransferUnitWithReason(L);
-}
-
-/***
- * @function Spring.TransferUnitWithReason
- * @param unitID integer
- * @param newTeamID integer
- * @param reason integer - specific reason for the transfer
- * @return nil
- */
-int LuaSyncedCtrl::TransferUnitWithReason(lua_State* L)
-{
-	CheckAllowGameChanges(L);
-	const int args = lua_gettop(L);
-	if (args < 3) //unitID, newTeam, reason
-		luaL_error(L, "Incorrect arguments to Spring.TransferUnitWithReason(unitID, newTeam, reason)");
-
 	CUnit* unit = ParseUnit(L, __func__, 1);
-
 	if (unit == nullptr)
 		return 0;
 
@@ -1892,7 +1863,7 @@ int LuaSyncedCtrl::TransferUnitWithReason(lua_State* L)
 	}
 
 	const int newTeam = luaL_checkint(L, 2);
-	const int reason = luaL_checkint(L, 3);
+	const bool given = (args >= 3) ? lua_toboolean(L, 3) : true;
 
 	if (!teamHandler.IsValidTeam(newTeam))
 		return 0;
@@ -1908,8 +1879,9 @@ int LuaSyncedCtrl::TransferUnitWithReason(lua_State* L)
 	inTransferUnit++;
 	ASSERT_SYNCED(unit->id);
 	ASSERT_SYNCED((int)newTeam);
-	ASSERT_SYNCED(reason);
-	const bool result = unit->ChangeTeam(newTeam, reason);
+	// given==true -> capture=false
+	const bool result = unit->ChangeTeam(newTeam, !given);
+	(void)result;
 	inTransferUnit--;
 
 	return 0;

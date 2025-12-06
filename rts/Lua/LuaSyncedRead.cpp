@@ -40,7 +40,10 @@
 #include "Sim/Misc/SmoothHeightMesh.h"
 #include "Sim/Misc/QuadField.h"
 #include "Sim/Misc/TeamHandler.h"
+#include "Sim/Misc/GlobalConstants.h"
+#include "Sim/Misc/ModInfo.h"
 #include "Sim/Misc/Wind.h"
+#include "System/Audit/EconomyAudit.h"
 #include "Sim/Misc/CollisionHandler.h"
 #include "Sim/MoveTypes/StrafeAirMoveType.h"
 #include "Sim/MoveTypes/GroundMoveType.h"
@@ -121,6 +124,9 @@ bool LuaSyncedRead::PushEntries(lua_State* L)
 
 	REGISTER_LUA_CFUNC(GetGameFrame);
 	REGISTER_LUA_CFUNC(GetGameSeconds);
+	REGISTER_LUA_CFUNC(IsEconomyAuditEnabled);
+	REGISTER_LUA_CFUNC(IsEconomyAuditActive);
+	REGISTER_LUA_CFUNC(GetEconomyAuditContext);
 
 	REGISTER_LUA_CFUNC(GetGameRulesParam);
 	REGISTER_LUA_CFUNC(GetGameRulesParams);
@@ -928,6 +934,54 @@ int LuaSyncedRead::GetGameSeconds(lua_State* L)
 {
 	lua_pushnumber(L, gs->GetLuaSimFrame() * INV_GAME_SPEED);
 	return 1;
+}
+
+
+/***
+ * Check if economy audit logging is enabled.
+ * 
+ * @function Spring.IsEconomyAuditEnabled
+ * @return boolean enabled
+ */
+int LuaSyncedRead::IsEconomyAuditEnabled(lua_State* L)
+{
+	lua_pushboolean(L, economyAudit.IsEnabled());
+	return 1;
+}
+
+
+/***
+ * Check if an economy audit context is currently active.
+ * This is true between Begin() and End() calls (i.e., during ProcessEconomy).
+ * 
+ * @function Spring.IsEconomyAuditActive
+ * @return boolean active
+ */
+int LuaSyncedRead::IsEconomyAuditActive(lua_State* L)
+{
+	lua_pushboolean(L, economyAudit.IsActive());
+	return 1;
+}
+
+
+/***
+ * Get the current economy audit context (source path and frame).
+ * Returns nil if no audit context is active.
+ * 
+ * @function Spring.GetEconomyAuditContext
+ * @return string|nil sourcePath "PE" or "RE"
+ * @return number|nil frame current frame number
+ */
+int LuaSyncedRead::GetEconomyAuditContext(lua_State* L)
+{
+	if (!economyAudit.IsActive()) {
+		lua_pushnil(L);
+		return 1;
+	}
+	
+	lua_pushstring(L, economyAudit.GetSourcePath().c_str());
+	lua_pushnumber(L, economyAudit.GetFrame());
+	return 2;
 }
 
 

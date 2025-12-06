@@ -7,6 +7,8 @@
 #include "Game/GameSetup.h"
 #include "Sim/Misc/GlobalConstants.h"
 #include "Sim/Misc/GlobalSynced.h"
+#include "System/EventHandler.h"
+#include "System/Log/ILog.h"
 
 #include "System/Misc/TracyDefs.h"
 
@@ -112,10 +114,21 @@ void CTeamHandler::SetDefaultStartPositions(const CGameSetup* setup)
 		team.SetDefaultStartPos();
 	}
 }
+void CTeamHandler::AccumulateFrameExcess()
+{
+	ZoneScopedN("PE_AccumulateExcess");
+	for (auto &team : teams) {
+		team.resDelayedShare += team.resExcessThisFrame;
+		team.resExcessThisFrame = 0.0f;
+	}
+}
 
 void CTeamHandler::GameFrame(int frameNum)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
+
+	AccumulateFrameExcess();
+
 	if ((frameNum % TEAM_SLOWUPDATE_RATE) != 0)
 		return;
 
@@ -125,6 +138,8 @@ void CTeamHandler::GameFrame(int frameNum)
 	for (int a = 0; a < ActiveTeams(); ++a) {
 		teams[a].SlowUpdate();
 	}
+
+	eventHandler.ProcessEconomy(frameNum);
 }
 
 

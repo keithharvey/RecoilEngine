@@ -118,3 +118,32 @@
 ---@alias StorageName "metalStorage"|"energyStorage"|"ms"|"es"
 
 ---@alias ResourceUsage table<ResourceName, number>
+
+--------------------------------------------------------------------------------
+-- Economy
+--------------------------------------------------------------------------------
+
+---@class ResourceData
+---@field resourceType ResourceName
+---@field current number
+---@field storage number
+---@field pull number
+---@field income number
+---@field expense number
+---@field shareSlider number
+---@field sent number
+---@field received number
+---@field excess number
+
+---@class TeamResourceData
+---@field allyTeam number
+---@field isDead boolean
+---@field metal ResourceData
+---@field energy ResourceData
+
+---@class EconomyTeamResult
+---@field teamId number
+---@field resourceType ResourceName
+---@field current number
+---@field sent number
+---@field received number

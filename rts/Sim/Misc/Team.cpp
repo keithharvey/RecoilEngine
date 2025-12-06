@@ -17,6 +17,7 @@
 #include "Sim/Units/UnitHandler.h"
 #include "System/ContainerUtil.h"
 #include "System/EventHandler.h"
+#include "System/Exceptions.h"
 #include "System/MsgStrings.h"
 #include "System/Log/ILog.h"
 #include "System/creg/STL_Set.h"
@@ -45,6 +46,7 @@ CR_REG_METADATA(CTeam, (
 	CR_MEMBER(resPrevExpense),
 	CR_MEMBER(resShare),
 	CR_MEMBER(resDelayedShare),
+	CR_MEMBER(resExcessThisFrame),
 	CR_MEMBER(resSent),
 	CR_MEMBER(resPrevSent),
 	CR_MEMBER(resReceived),
@@ -156,7 +158,7 @@ void CTeam::AddMetal(float amount, bool useIncomeMultiplier)
 	if (res.metal <= resStorage.metal)
 		return;
 
-	resDelayedShare.metal += (res.metal - resStorage.metal);
+	resExcessThisFrame.metal += (res.metal - resStorage.metal);
 	res.metal = resStorage.metal;
 }
 
@@ -170,7 +172,7 @@ void CTeam::AddEnergy(float amount, bool useIncomeMultiplier)
 	resIncome.energy += amount;
 
 	if (res.energy > resStorage.energy) {
-		resDelayedShare.energy += (res.energy - resStorage.energy);
+		resExcessThisFrame.energy += (res.energy - resStorage.energy);
 		res.energy = resStorage.energy;
 	}
 }
@@ -196,7 +198,7 @@ void CTeam::AddResources(SResourcePack amount, bool useIncomeMultiplier)
 		if (res[i] <= resStorage[i])
 			continue;
 
-		resDelayedShare[i] += (res[i] - resStorage[i]);
+		resExcessThisFrame[i] += (res[i] - resStorage[i]);
 		res[i] = resStorage[i];
 	}
 }
@@ -216,6 +218,10 @@ bool CTeam::UseResources(const SResourcePack& amount)
 void CTeam::GiveEverythingTo(const unsigned toTeam)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
+
+	if (modInfo.game_economy)
+		throw user_error("GiveEverythingTo is deprecated when game_economy is enabled. Use Lua to transfer resources and units.");
+
 	CTeam* target = teamHandler.Team(toTeam);
 
 	if (target == nullptr) {
@@ -332,82 +338,92 @@ void CTeam::SlowUpdate()
 	RECOIL_DETAILED_TRACY_ZONE;
 	TeamStatistics& currentStats = GetCurrentStats();
 
-	float eShare = 0.0f;
-	float mShare = 0.0f;
+	if (modInfo.game_economy) {
+		currentStats.metalProduced  += resPrevIncome.metal;
+		currentStats.energyProduced += resPrevIncome.energy;
+		currentStats.metalUsed  += resPrevExpense.metal;
+		currentStats.energyUsed += resPrevExpense.energy;
 
-	// calculate the total amount of resources that all
-	// (allied) teams can collectively receive through
-	// sharing
-	for (int a = 0; a < teamHandler.ActiveTeams(); ++a) {
-		CTeam* team = teamHandler.Team(a);
+		// resDelayedShare is handled by ProcessEconomy callin
+		// They read it and zero it after processing
+	} else {
+		float eShare = 0.0f;
+		float mShare = 0.0f;
 
-		if ((a != teamNum) && (teamHandler.AllyTeam(teamNum) == teamHandler.AllyTeam(a))) {
-			if (team->isDead)
-				continue;
-
-			eShare += std::max(0.0f, (team->resStorage.energy * 0.99f) - team->res.energy);
-			mShare += std::max(0.0f, (team->resStorage.metal  * 0.99f) - team->res.metal);
-		}
-	}
-
-	currentStats.metalProduced  += resPrevIncome.metal;
-	currentStats.energyProduced += resPrevIncome.energy;
-	currentStats.metalUsed  += resPrevExpense.metal;
-	currentStats.energyUsed += resPrevExpense.energy;
-
-	res.metal  += resDelayedShare.metal;  resDelayedShare.metal  = 0.0f;
-	res.energy += resDelayedShare.energy; resDelayedShare.energy = 0.0f;
-
-
-	// calculate how much we can share in total (any and all excess resources)
-	const float eExcess = std::max(0.0f, res.energy - (resStorage.energy * resShare.energy));
-	const float mExcess = std::max(0.0f, res.metal  - (resStorage.metal  * resShare.metal));
-
-	float de = 0.0f;
-	float dm = 0.0f;
-	if (eShare > 0.0f) { de = std::min(1.0f, eExcess / eShare); }
-	if (mShare > 0.0f) { dm = std::min(1.0f, mExcess / mShare); }
-
-	// now evenly distribute our excess resources among allied teams
-	if (modInfo.nativeExcessSharing) {
+		// calculate the total amount of resources that all
+		// (allied) teams can collectively receive through
+		// sharing
 		for (int a = 0; a < teamHandler.ActiveTeams(); ++a) {
+			CTeam* team = teamHandler.Team(a);
+
 			if ((a != teamNum) && (teamHandler.AllyTeam(teamNum) == teamHandler.AllyTeam(a))) {
-				CTeam* team = teamHandler.Team(a);
 				if (team->isDead)
 					continue;
 
-				//due to precision errors mdif/edif sometimes can be slightly >= than res. If team has no metal income
-				//this causes units with zero fire resources requirements to be unable to fire
-				//when CTeam::HaveResources() is evaluated, thus clamp edif / mdif on both sides
-
-				const float edif = std::clamp(((team->resStorage.energy * 0.99f) - team->res.energy) * de, 0.0f, res.energy);
-				const float mdif = std::clamp(((team->resStorage.metal  * 0.99f) - team->res.metal ) * dm, 0.0f, res.metal );
-
-				res.energy     -= edif; team->res.energy         += edif;
-				resSent.energy += edif; team->resReceived.energy += edif;
-				res.metal      -= mdif; team->res.metal          += mdif;
-				resSent.metal  += mdif; team->resReceived.metal  += mdif;
-
-				currentStats.energySent += edif; team->GetCurrentStats().energyReceived += edif;
-				currentStats.metalSent  += mdif; team->GetCurrentStats().metalReceived  += mdif;
+				eShare += std::max(0.0f, (team->resStorage.energy * 0.99f) - team->res.energy);
+				mShare += std::max(0.0f, (team->resStorage.metal  * 0.99f) - team->res.metal);
 			}
 		}
-	}
 
-	// clamp resource levels to storage capacity
-	if (res.metal > resStorage.metal) {
-		resPrevExcess.metal = (res.metal - resStorage.metal);
-		currentStats.metalExcess += resPrevExcess.metal;
-		res.metal = resStorage.metal;
-	} else {
-		resPrevExcess.metal = 0;
-	}
-	if (res.energy > resStorage.energy) {
-		resPrevExcess.energy = (res.energy - resStorage.energy);
-		currentStats.energyExcess += resPrevExcess.energy;
-		res.energy = resStorage.energy;
-	} else {
-		resPrevExcess.energy = 0;
+		currentStats.metalProduced  += resPrevIncome.metal;
+		currentStats.energyProduced += resPrevIncome.energy;
+		currentStats.metalUsed  += resPrevExpense.metal;
+		currentStats.energyUsed += resPrevExpense.energy;
+
+		res.metal  += resDelayedShare.metal;  resDelayedShare.metal  = 0.0f;
+		res.energy += resDelayedShare.energy; resDelayedShare.energy = 0.0f;
+
+
+		// calculate how much we can share in total (any and all excess resources)
+		const float eExcess = std::max(0.0f, res.energy - (resStorage.energy * resShare.energy));
+		const float mExcess = std::max(0.0f, res.metal  - (resStorage.metal  * resShare.metal));
+
+		float de = 0.0f;
+		float dm = 0.0f;
+		if (eShare > 0.0f) { de = std::min(1.0f, eExcess / eShare); }
+		if (mShare > 0.0f) { dm = std::min(1.0f, mExcess / mShare); }
+
+		// now evenly distribute our excess resources among allied teams
+		if (modInfo.nativeExcessSharing) {
+			for (int a = 0; a < teamHandler.ActiveTeams(); ++a) {
+				if ((a != teamNum) && (teamHandler.AllyTeam(teamNum) == teamHandler.AllyTeam(a))) {
+					CTeam* team = teamHandler.Team(a);
+					if (team->isDead)
+						continue;
+
+					//due to precision errors mdif/edif sometimes can be slightly >= than res. If team has no metal income
+					//this causes units with zero fire resources requirements to be unable to fire
+					//when CTeam::HaveResources() is evaluated, thus clamp edif / mdif on both sides
+
+					const float edif = std::clamp(((team->resStorage.energy * 0.99f) - team->res.energy) * de, 0.0f, res.energy);
+					const float mdif = std::clamp(((team->resStorage.metal  * 0.99f) - team->res.metal ) * dm, 0.0f, res.metal );
+
+					res.energy     -= edif; team->res.energy         += edif;
+					resSent.energy += edif; team->resReceived.energy += edif;
+					res.metal      -= mdif; team->res.metal          += mdif;
+					resSent.metal  += mdif; team->resReceived.metal  += mdif;
+
+					currentStats.energySent += edif; team->GetCurrentStats().energyReceived += edif;
+					currentStats.metalSent  += mdif; team->GetCurrentStats().metalReceived  += mdif;
+				}
+			}
+		}
+
+		// clamp resource levels to storage capacity
+		if (res.metal > resStorage.metal) {
+			resPrevExcess.metal = (res.metal - resStorage.metal);
+			currentStats.metalExcess += resPrevExcess.metal;
+			res.metal = resStorage.metal;
+		} else {
+			resPrevExcess.metal = 0;
+		}
+		if (res.energy > resStorage.energy) {
+			resPrevExcess.energy = (res.energy - resStorage.energy);
+			currentStats.energyExcess += resPrevExcess.energy;
+			res.energy = resStorage.energy;
+		} else {
+			resPrevExcess.energy = 0;
+		}
 	}
 
 	// make sure the stats update is always in a SlowUpdate

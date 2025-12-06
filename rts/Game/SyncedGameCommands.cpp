@@ -27,6 +27,7 @@
 #include "Sim/Units/UnitLoader.h"
 #include "Sim/Units/Unit.h"
 #include "System/EventHandler.h"
+#include "System/Exceptions.h"
 #include "System/FileSystem/SimpleParser.h"
 #include "System/Log/ILog.h"
 #include "System/SafeUtil.h"
@@ -510,6 +511,9 @@ public:
 	}
 
 	bool Execute(const SyncedAction& action) const final {
+		if (modInfo.game_economy)
+			throw user_error("Engine /take command is disabled when game_economy is enabled. Use Lua implementation instead.");
+
 		const CPlayer* actionPlayer = playerHandler.Player(action.GetPlayerID());
 
 		if (actionPlayer->spectator && !gs->cheatEnabled)

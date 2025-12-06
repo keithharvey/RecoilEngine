@@ -6,9 +6,12 @@
 #include "Lua/LuaCallInCheck.h"
 #include "Lua/LuaOpenGL.h"  // FIXME -- should be moved
 
+#include "Sim/Misc/ModInfo.h"
 #include "System/Config/ConfigHandler.h"
+#include "System/Exceptions.h"
 #include "System/Platform/Threading.h"
 #include "System/GlobalConfig.h"
+#include "System/Log/ILog.h"
 
 #include "System/Misc/TracyDefs.h"
 
@@ -62,6 +65,8 @@ void CEventHandler::SetupEvents()
 
 void CEventHandler::AddClient(CEventClient* ec)
 {
+	LOG("[AddClient] Adding client %p synced=%d", (void*)ec, ec->GetSynced() ? 1 : 0);
+
 	ListInsert(handles, ec);
 
 	for (const auto& element: eventMap) {
@@ -79,6 +84,8 @@ void CEventHandler::AddClient(CEventClient* ec)
 
 void CEventHandler::RemoveClient(CEventClient* ec)
 {
+	LOG("[RemoveClient] Removing client %p synced=%d", (void*)ec, ec->GetSynced() ? 1 : 0);
+
 	if (mouseOwner == ec)
 		mouseOwner = nullptr;
 
@@ -148,9 +155,12 @@ bool CEventHandler::InsertEvent(CEventClient* ec, const std::string& ciName)
 	const auto comp = [](const EventPair& a, const EventPair& b) { return (a.first < b.first); };
 	const auto iter = std::lower_bound(eventMap.begin(), eventMap.end(), EventPair{ciName, {}}, comp);
 
-	if ((iter == eventMap.end()) || (iter->second.GetList() == nullptr) || (iter->first != ciName))
+	if (iter == eventMap.end())
 		return false;
-
+	if (iter->second.GetList() == nullptr)
+		return false;
+	if (iter->first != ciName)
+		return false;
 	if (ec->GetSynced() && iter->second.HasPropBit(UNSYNCED_BIT))
 		return false;
 
@@ -356,7 +366,16 @@ bool CEventHandler::AllowResourceLevel(int teamID, const std::string& type, floa
 bool CEventHandler::AllowResourceTransfer(int oldTeam, int newTeam, const char* type, float amount)
 {
 	ZoneScoped;
+	if (modInfo.game_economy)
+		throw user_error("AllowResourceTransfer is deprecated when game_economy is enabled");
+
 	return ControlIterateDefTrue(listAllowResourceTransfer, &CEventClient::AllowResourceTransfer, oldTeam, newTeam, type, amount);
+}
+
+bool CEventHandler::TeamShare(int teamID, int targetTeamID)
+{
+	ZoneScoped;
+	return ControlIterateDefTrue(listTeamShare, &CEventClient::TeamShare, teamID, targetTeamID);
 }
 
 
@@ -560,6 +579,12 @@ void CEventHandler::GameFramePost(int gameFrame)
 {
 	ZoneScoped;
 	ITERATE_EVENTCLIENTLIST(GameFramePost, gameFrame);
+}
+
+void CEventHandler::ProcessEconomy(int gameFrame)
+{
+	ZoneScoped;
+	ITERATE_EVENTCLIENTLIST(ProcessEconomy, gameFrame);
 }
 
 void CEventHandler::GameProgress(int gameFrame)

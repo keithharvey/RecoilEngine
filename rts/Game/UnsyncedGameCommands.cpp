@@ -4236,7 +4236,7 @@ void UnsyncedGameCommands::AddDefaultActionExecutors()
 	AddActionExecutor(AllocActionExecutor<RedirectToSyncedActionExecutor>("Desync"));
 #endif
 	AddActionExecutor(AllocActionExecutor<RedirectToSyncedActionExecutor>("Resync"));
-	if (modInfo.allowTake)
+	if (modInfo.allowTake && !modInfo.game_economy)
 		AddActionExecutor(AllocActionExecutor<RedirectToSyncedActionExecutor>("Take"));
 
 	AddActionExecutor(AllocActionExecutor<RedirectToSyncedActionExecutor>("LuaRules"));

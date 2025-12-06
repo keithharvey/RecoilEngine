@@ -7,6 +7,9 @@
 #include "Game/GameSetup.h"
 #include "Sim/Misc/GlobalConstants.h"
 #include "Sim/Misc/GlobalSynced.h"
+#include "Sim/Misc/ModInfo.h"
+#include "System/EventHandler.h"
+#include "System/Log/ILog.h"
 
 #include "System/Misc/TracyDefs.h"
 
@@ -124,6 +127,10 @@ void CTeamHandler::GameFrame(int frameNum)
 	}
 	for (int a = 0; a < ActiveTeams(); ++a) {
 		teams[a].SlowUpdate();
+	}
+
+	if (modInfo.game_economy) {
+		eventHandler.ProcessEconomy(frameNum);
 	}
 }
 

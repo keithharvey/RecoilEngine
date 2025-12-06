@@ -76,8 +76,154 @@
 #include "System/EventHandler.h"
 #include "System/ObjectDependenceTypes.h"
 #include "System/Log/ILog.h"
+#include "System/Misc/SpringTime.h"
 
 using std::max;
+
+namespace {
+	enum class ResourceKind {
+		Metal,
+		Energy,
+	};
+
+	static const char* GetResourceName(ResourceKind kind)
+	{
+		return (kind == ResourceKind::Metal) ? "metal" : "energy";
+	}
+
+	static bool ResolveResourceDescriptor(const char* name, ResourceKind& kind, bool& isStorage)
+	{
+		switch (hashString(name)) {
+			case hashString("m"):
+			case hashString("metal"): {
+				kind = ResourceKind::Metal;
+				isStorage = false;
+				return true;
+			} break;
+			case hashString("ms"):
+			case hashString("metalStorage"): {
+				kind = ResourceKind::Metal;
+				isStorage = true;
+				return true;
+			} break;
+			case hashString("e"):
+			case hashString("energy"): {
+				kind = ResourceKind::Energy;
+				isStorage = false;
+				return true;
+			} break;
+			case hashString("es"):
+			case hashString("energyStorage"): {
+				kind = ResourceKind::Energy;
+				isStorage = true;
+				return true;
+			} break;
+			default: {
+				return false;
+			} break;
+		}
+	}
+
+	static int AbsIndex(lua_State* L, int idx)
+	{
+		// lua_absindex is not available on legacy Lua; reproduce its behavior
+		return (idx > 0 || idx <= LUA_REGISTRYINDEX) ? idx : (lua_gettop(L) + idx + 1);
+	}
+
+	static void ApplyResourceTable(lua_State* L, int tableIdx, CTeam* team, ResourceKind kind)
+	{
+		if (!lua_istable(L, tableIdx))
+			luaL_error(L, "expected ResourceData table");
+
+		const int absIdx = AbsIndex(L, tableIdx);
+
+		float& current   = (kind == ResourceKind::Metal) ? team->res.metal           : team->res.energy;
+		float& storage   = (kind == ResourceKind::Metal) ? team->resStorage.metal    : team->resStorage.energy;
+		float& pull      = (kind == ResourceKind::Metal) ? team->resPull.metal       : team->resPull.energy;
+		float& income    = (kind == ResourceKind::Metal) ? team->resIncome.metal     : team->resIncome.energy;
+		float& expense   = (kind == ResourceKind::Metal) ? team->resExpense.metal    : team->resExpense.energy;
+		float& share     = (kind == ResourceKind::Metal) ? team->resShare.metal      : team->resShare.energy;
+		float& sent      = (kind == ResourceKind::Metal) ? team->resSent.metal       : team->resSent.energy;
+		float& received  = (kind == ResourceKind::Metal) ? team->resReceived.metal   : team->resReceived.energy;
+		float& excess    = (kind == ResourceKind::Metal) ? team->resPrevExcess.metal : team->resPrevExcess.energy;
+
+		bool storageProvided = false;
+		float newStorage = storage;
+
+		lua_getfield(L, absIdx, "storage");
+		if (lua_isnumber(L, -1)) {
+			newStorage = std::max(0.0f, (float)lua_tonumber(L, -1));
+			storageProvided = true;
+		}
+		lua_pop(L, 1);
+
+		lua_getfield(L, absIdx, "pull");
+		if (lua_isnumber(L, -1))
+			pull = std::max(0.0f, (float)lua_tonumber(L, -1));
+		lua_pop(L, 1);
+
+		lua_getfield(L, absIdx, "income");
+		if (lua_isnumber(L, -1))
+			income = (float)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+
+		lua_getfield(L, absIdx, "expense");
+		if (lua_isnumber(L, -1))
+			expense = (float)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+
+		lua_getfield(L, absIdx, "shareSlider");
+		if (lua_isnumber(L, -1))
+			share = std::clamp((float)lua_tonumber(L, -1), 0.0f, 1.0f);
+		lua_pop(L, 1);
+
+		lua_getfield(L, absIdx, "current");
+		if (lua_isnumber(L, -1))
+			current = std::max(0.0f, (float)lua_tonumber(L, -1));
+		lua_pop(L, 1);
+
+		lua_getfield(L, absIdx, "sent");
+		if (lua_isnumber(L, -1)) {
+			const float val = (float)lua_tonumber(L, -1);
+			sent += val;
+			if (kind == ResourceKind::Metal)
+				team->GetCurrentStats().metalSent += val;
+			else
+				team->GetCurrentStats().energySent += val;
+		}
+		lua_pop(L, 1);
+
+		lua_getfield(L, absIdx, "received");
+		if (lua_isnumber(L, -1)) {
+			const float val = (float)lua_tonumber(L, -1);
+			received += val;
+			if (kind == ResourceKind::Metal)
+				team->GetCurrentStats().metalReceived += val;
+			else
+				team->GetCurrentStats().energyReceived += val;
+		}
+		lua_pop(L, 1);
+
+		lua_getfield(L, absIdx, "excess");
+		if (lua_isnumber(L, -1)) {
+			const float val = (float)lua_tonumber(L, -1);
+			excess += val;
+			if (kind == ResourceKind::Metal)
+				team->GetCurrentStats().metalExcess += val;
+			else
+				team->GetCurrentStats().energyExcess += val;
+		}
+		lua_pop(L, 1);
+
+		if (storageProvided)
+			storage = newStorage;
+
+		if (!modInfo.game_economy)
+			current = std::min(current, storage);
+
+		current = std::max(0.0f, current);
+	}
+}
 
 
 /******************************************************************************/
@@ -147,9 +293,14 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 
 	REGISTER_LUA_CFUNC(AddTeamResource);
 	REGISTER_LUA_CFUNC(UseTeamResource);
+	REGISTER_LUA_CFUNC(GetTeamResourceData);
+	REGISTER_LUA_CFUNC(SetTeamResourceData);
 	REGISTER_LUA_CFUNC(SetTeamResource);
 	REGISTER_LUA_CFUNC(SetTeamShareLevel);
 	REGISTER_LUA_CFUNC(ShareTeamResource);
+	REGISTER_LUA_CFUNC(SetEconomyController);
+	REGISTER_LUA_CFUNC(SetUnitTransferController);
+	REGISTER_LUA_CFUNC(GetAuditTimer);
 
 	REGISTER_LUA_CFUNC(SetGameRulesParam);
 	REGISTER_LUA_CFUNC(SetTeamRulesParam);
@@ -1263,7 +1414,140 @@ int LuaSyncedCtrl::UseTeamResource(lua_State* L)
 		return 1;
 	}
 
-	luaL_error(L, "bad arguments");
+luaL_error(L, "bad arguments");
+return 0;
+}
+
+
+/***
+ * Resource snapshot returned by the economy controller.
+ *
+ * @class ResourceData
+ * @x_helper
+ *
+ * @field current number? current stockpile
+ * @field storage number? max storage
+ * @field pull number? requested usage
+ * @field income number? production income
+ * @field expense number? expenditure
+ * @field shareSlider number? share threshold slider
+ * @field sent number? resources sent this frame
+ * @field received number? resources received this frame
+ * @field excess number? excess dumped this frame
+ * @field resourceType ResourceName resource associated with the snapshot
+ */
+
+/***
+ * Convenience shape for metal + energy ResourceData pairs.
+ *
+ * @class TeamResourceSnapshot
+ * @x_helper
+ *
+ * @field metal ResourceData
+ * @field energy ResourceData
+ */
+
+/***
+ * Reads the current ResourceData snapshot for a single resource.
+ *
+ * @function Spring.GetTeamResourceData
+ * @param teamID integer
+ * @param resource ResourceName
+ * @return ResourceData
+ */
+int LuaSyncedCtrl::GetTeamResourceData(lua_State* L)
+{
+	const int teamID = luaL_checkint(L, 1);
+
+	if (!teamHandler.IsValidTeam(teamID))
+		return 0;
+
+	if (!CanControlTeam(L, teamID))
+		return 0;
+
+	const CTeam* team = teamHandler.Team(teamID);
+
+	if (team == nullptr)
+		return 0;
+
+	const char* descriptor = luaL_checkstring(L, 2);
+
+	ResourceKind kind;
+	bool isStorage;
+	if (!ResolveResourceDescriptor(descriptor, kind, isStorage))
+		luaL_error(L, "invalid resource descriptor");
+
+	if (isStorage)
+		luaL_error(L, "ResourceData requires a resource descriptor (metal or energy)");
+
+	const float current  = (kind == ResourceKind::Metal) ? team->res.metal           : team->res.energy;
+	const float storage  = (kind == ResourceKind::Metal) ? team->resStorage.metal    : team->resStorage.energy;
+	const float pull     = (kind == ResourceKind::Metal) ? team->resPull.metal       : team->resPull.energy;
+	const float income   = (kind == ResourceKind::Metal) ? team->resIncome.metal     : team->resIncome.energy;
+	const float expense  = (kind == ResourceKind::Metal) ? team->resExpense.metal    : team->resExpense.energy;
+	const float share    = (kind == ResourceKind::Metal) ? team->resShare.metal      : team->resShare.energy;
+	const float sent     = (kind == ResourceKind::Metal) ? team->resSent.metal       : team->resSent.energy;
+	const float received = (kind == ResourceKind::Metal) ? team->resReceived.metal   : team->resReceived.energy;
+	const float excess   = (kind == ResourceKind::Metal) ? team->resPrevExcess.metal : team->resPrevExcess.energy;
+
+	lua_newtable(L);
+	LuaPushNamedNumber(L, "current", current);
+	LuaPushNamedNumber(L, "storage", storage);
+	LuaPushNamedNumber(L, "pull", pull);
+	LuaPushNamedNumber(L, "income", income);
+	LuaPushNamedNumber(L, "expense", expense);
+	LuaPushNamedNumber(L, "shareSlider", share);
+	LuaPushNamedNumber(L, "sent", sent);
+	LuaPushNamedNumber(L, "received", received);
+	LuaPushNamedNumber(L, "excess", excess);
+	lua_pushstring(L, GetResourceName(kind));
+	lua_setfield(L, -2, "resourceType");
+
+	return 1;
+}
+
+/***
+ * Applies ResourceData to a team. Reads resourceType from the table to determine metal/energy.
+ *
+ * @function Spring.SetTeamResourceData
+ * @param teamID integer
+ * @param data ResourceData
+ * @return nil
+ */
+int LuaSyncedCtrl::SetTeamResourceData(lua_State* L)
+{
+	const int teamID = luaL_checkint(L, 1);
+
+	if (!teamHandler.IsValidTeam(teamID))
+		return 0;
+
+	if (!CanControlTeam(L, teamID))
+		return 0;
+
+	CTeam* team = teamHandler.Team(teamID);
+
+	if (team == nullptr)
+		return 0;
+
+	if (!lua_istable(L, 2))
+		luaL_error(L, "expected ResourceData table");
+
+	lua_getfield(L, 2, "resourceType");
+	if (!lua_isstring(L, -1))
+		luaL_error(L, "ResourceData must have resourceType field");
+
+	const char* resourceType = lua_tostring(L, -1);
+	lua_pop(L, 1);
+
+	ResourceKind kind;
+	bool isStorage;
+	if (!ResolveResourceDescriptor(resourceType, kind, isStorage))
+		luaL_error(L, "invalid resourceType: must be 'metal' or 'energy'");
+
+	if (isStorage)
+		luaL_error(L, "resourceType must be 'metal' or 'energy', not a storage type");
+
+	ApplyResourceTable(L, 2, team, kind);
 	return 0;
 }
 
@@ -1278,6 +1562,11 @@ int LuaSyncedCtrl::UseTeamResource(lua_State* L)
 int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 {
 	const int teamID = luaL_checkint(L, 1);
+
+	if (modInfo.game_economy) {
+		// Allow SetTeamResource even in game_economy mode to enable ad-hoc transfers via Lua gadgets
+		// (e.g. GG.ShareTeamResource implementation)
+	}
 
 	if (!teamHandler.IsValidTeam(teamID))
 		return 0;
@@ -1295,22 +1584,38 @@ int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 	switch (hashString(luaL_checkstring(L, 2))) {
 		case hashString("m"):
 		case hashString("metal"): {
-			team->res.metal = std::min<float>(team->resStorage.metal, value);
+			if (modInfo.game_economy) {
+				team->res.metal = value;
+			} else {
+				team->res.metal = std::min<float>(team->resStorage.metal, value);
+			}
 		} break;
 
 		case hashString("e"):
 		case hashString("energy"): {
-			team->res.energy = std::min<float>(team->resStorage.energy, value);
+			if (modInfo.game_economy) {
+				team->res.energy = value;
+			} else {
+				team->res.energy = std::min<float>(team->resStorage.energy, value);
+			}
 		} break;
 
 		case hashString("ms"):
 		case hashString("metalStorage"): {
-			team->res.metal = std::min<float>(team->res.metal, team->resStorage.metal = value);
+			if (modInfo.game_economy) {
+				team->resStorage.metal = value;
+			} else {
+				team->res.metal = std::min<float>(team->res.metal, team->resStorage.metal = value);
+			}
 		} break;
 
 		case hashString("es"):
 		case hashString("energyStorage"): {
-			team->res.energy = std::min<float>(team->res.energy, team->resStorage.energy = value);
+			if (modInfo.game_economy) {
+				team->resStorage.energy = value;
+			} else {
+				team->res.energy = std::min<float>(team->res.energy, team->resStorage.energy = value);
+			}
 		} break;
 	}
 
@@ -1422,6 +1727,128 @@ int LuaSyncedCtrl::ShareTeamResource(lua_State* L)
 	}
 
 	return 0;
+}
+
+
+/***
+ * @class GameEconomyController
+ * @x_helper
+ * @field ProcessEconomy function The economy solver: function(frame, teamsTable) -> updatedTeamsTable
+ */
+
+/*** Registers the economy controller.
+ * When registered, the engine will call ProcessEconomy each frame with team resource data.
+ * Lua processes the economy (overflow sharing, etc.) and returns updated values.
+ *
+ * @function Spring.SetEconomyController
+ * @param controller GameEconomyController Table with ProcessEconomy function
+ * @return nil
+ */
+int LuaSyncedCtrl::SetEconomyController(lua_State* L)
+{
+	if (!lua_istable(L, 1))
+		luaL_error(L, "SetEconomyController requires a GameEconomyController table");
+
+	// Validate required field
+	lua_getfield(L, 1, "ProcessEconomy");
+	if (!lua_isfunction(L, -1)) {
+		lua_pop(L, 1);
+		luaL_error(L, "SetEconomyController: missing required function 'ProcessEconomy'");
+		return 0;
+	}
+	lua_pop(L, 1);
+
+	CLuaHandle* lh = CLuaHandle::GetHandle(L);
+	CSyncedLuaHandle* slh = dynamic_cast<CSyncedLuaHandle*>(lh);
+	if (slh == nullptr)
+		return 0;
+
+	// Store table reference
+	lua_pushvalue(L, 1);
+	int tableRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	// Store ProcessEconomy function reference
+	lua_getfield(L, 1, "ProcessEconomy");
+	int processEconRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	slh->SetEconomyController(tableRef, processEconRef);
+
+	// Register the event since there's no global "ProcessEconomy" for UpdateCallIn to find
+	eventHandler.InsertEvent(slh, "ProcessEconomy");
+
+	return 0;
+}
+
+
+/***
+ * @class GameUnitTransferController
+ * @x_helper
+ * @field AllowUnitTransfer function Unit transfer validator: function(unitID, unitDefID, fromTeamID, toTeamID, capture) -> boolean
+ * @field TeamShare function Complete team takeover handler: function(srcTeamID, dstTeamID)
+ */
+
+/*** Registers the unit transfer controller.
+ * When registered, the engine will call AllowUnitTransfer and TeamShare through this controller
+ * instead of looking for global functions.
+ *
+ * @function Spring.SetUnitTransferController
+ * @param controller GameUnitTransferController Table with AllowUnitTransfer and TeamShare functions
+ * @return nil
+ */
+int LuaSyncedCtrl::SetUnitTransferController(lua_State* L)
+{
+	if (!lua_istable(L, 1))
+		luaL_error(L, "SetUnitTransferController requires a GameUnitTransferController table");
+
+	// Validate required fields
+	static const char* requiredFields[] = {
+		"AllowUnitTransfer",
+		"TeamShare"
+	};
+
+	for (const char* field : requiredFields) {
+		lua_getfield(L, 1, field);
+		if (!lua_isfunction(L, -1)) {
+			lua_pop(L, 1);
+			luaL_error(L, "SetUnitTransferController: missing required function '%s'", field);
+			return 0;
+		}
+		lua_pop(L, 1);
+	}
+
+	CLuaHandle* lh = CLuaHandle::GetHandle(L);
+	CSyncedLuaHandle* slh = dynamic_cast<CSyncedLuaHandle*>(lh);
+	if (slh == nullptr)
+		return 0;
+
+	// Store table reference
+	lua_pushvalue(L, 1);
+	int tableRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	// Store AllowUnitTransfer function reference
+	lua_getfield(L, 1, "AllowUnitTransfer");
+	int allowTransferRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	// Store TeamShare function reference
+	lua_getfield(L, 1, "TeamShare");
+	int teamShareRefVal = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	slh->SetUnitTransferController(tableRef, allowTransferRef, teamShareRefVal);
+
+	// Register events - the controller now owns these callins
+	eventHandler.InsertEvent(slh, "AllowUnitTransfer");
+	eventHandler.InsertEvent(slh, "TeamShare");
+
+	return 0;
+}
+
+int LuaSyncedCtrl::GetAuditTimer(lua_State* L)
+{
+	// Use a static start time to return deltas, avoiding float64 precision loss
+	// with large absolute microsecond values (which can exceed 2^53)
+	static const spring_time startTime = spring_gettime();
+	lua_pushnumber(L, (lua_Number)(spring_gettime() - startTime).toMicroSecsi());
+	return 1;
 }
 
 

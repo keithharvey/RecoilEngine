@@ -24,6 +24,7 @@
 #include "Net/Protocol/NetProtocol.h"
 #include "Rendering/GlobalRendering.h"
 #include "Sim/Misc/GlobalSynced.h"
+#include "Sim/Misc/ModInfo.h"
 #include "Sim/Misc/TeamHandler.h"
 #include "Sim/Path/IPathManager.h"
 #include "Sim/Units/UnitHandler.h"
@@ -896,23 +897,29 @@ void CGame::ClientReadNet()
 					uint8_t srcTeamID;
 					uint8_t dstTeamID;
 
-					float metalShare;
-					float energyShare;
-
 					pckt >> numBytes;
 					pckt >> player;
 
 					if (!playerHandler.IsValidPlayer(player))
 						throw netcode::UnpackPacketException("Invalid player number");
 
+					pckt >> aiID;
+					pckt >> srcTeamID;
+					pckt >> dstTeamID;
+
+					if (modInfo.game_economy) {
+						eventHandler.TeamShare(srcTeamID, dstTeamID);
+						break;
+					}
+
+					float metalShare;
+					float energyShare;
+
 					// total message length
 					constexpr int32_t    fixedLen = (1 + sizeof(short) + 3 + (2 * sizeof(float)));
 					const     int32_t variableLen = numBytes - fixedLen;
 					const     int32_t  numUnitIDs = variableLen / sizeof(short); // each unitID is two bytes
 
-					pckt >> aiID;
-					pckt >> srcTeamID;
-					pckt >> dstTeamID;
 					pckt >> metalShare;
 					pckt >> energyShare;
 
@@ -1044,6 +1051,12 @@ void CGame::ClientReadNet()
 				const int32_t srcTeamID = playerHandler.Player(playerNum)->team;
 				const uint8_t dstTeamID = inbuf[2];
 
+				if (modInfo.game_economy) {
+					eventHandler.TeamShare(srcTeamID, dstTeamID);
+					AddTraffic(playerNum, packetCode, dataLength);
+					break;
+				}
+
 				CTeam* srcTeam = teamHandler.Team(srcTeamID);
 				CTeam* dstTeam = teamHandler.Team(dstTeamID);
 
@@ -1121,10 +1134,12 @@ void CGame::ClientReadNet()
 				const float metalShare = *reinterpret_cast<const float*>(&inbuf[3]);
 				const float energyShare = *reinterpret_cast<const float*>(&inbuf[7]);
 
-				if (eventHandler.AllowResourceLevel(teamNum, "m", metalShare))
-					team->resShare.metal = metalShare;
-				if (eventHandler.AllowResourceLevel(teamNum, "e", energyShare))
-					team->resShare.energy = energyShare;
+				if (!modInfo.game_economy) {
+					if (eventHandler.AllowResourceLevel(teamNum, "m", metalShare))
+						team->resShare.metal = metalShare;
+					if (eventHandler.AllowResourceLevel(teamNum, "e", energyShare))
+						team->resShare.energy = energyShare;
+				}
 
 				AddTraffic(playerNum, packetCode, dataLength);
 			} break;

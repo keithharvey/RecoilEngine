@@ -2536,8 +2536,8 @@ void CLuaHandle::Update()
 	if (!cmdStr.GetGlobalFunc(L))
 		return;
 
-	// call the routine and pass dt
-	lua_pushnumber(L, game->updateDeltaSeconds);
+	// call the routine and pass dt (game is null during menu phase)
+	lua_pushnumber(L, game ? game->updateDeltaSeconds : 0.0f);
 	RunCallIn(L, cmdStr, 1, 0);
 }
 

@@ -78,6 +78,7 @@
 #include "Sim/Misc/BuildingMaskMap.h"
 #include "Sim/Misc/LosHandler.h"
 #include "Sim/Misc/ModInfo.h"
+#include "System/Audit/EconomyAudit.h"
 #include "Sim/Misc/InterceptHandler.h"
 #include "Sim/Misc/QuadField.h"
 #include "Sim/Misc/SideParser.h"
@@ -262,6 +263,9 @@ CGame::CGame(const std::string& mapFileName, const std::string& modFileName, ILo
 	envResHandler.ResetState();
 
 	modInfo.Init(modFileName);
+
+	// Initialize economy audit logging (depends on LogSections config)
+	economyAudit.Init();
 
 	// needed for LuaIntro (pushes LuaConstGame)
 	assert(mapInfo == nullptr);
@@ -2169,14 +2173,12 @@ void CGame::ActionReceived(const Action& action, int playerID)
 	const ISyncedActionExecutor* executor = syncedGameCommands->GetActionExecutor(action.command);
 
 	if (executor != nullptr) {
-		// an executor for that action was found
 		executor->ExecuteAction(SyncedAction(action, playerID));
 		return;
 	}
 
 	if (!gs->PreSimFrame()) {
 		eventHandler.SyncedActionFallback(action.rawline, playerID);
-		//FIXME add unsynced one?
 	}
 }
 

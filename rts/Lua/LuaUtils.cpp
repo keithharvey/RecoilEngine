@@ -15,6 +15,7 @@
 #include "Sim/Features/Feature.h"
 #include "Sim/Features/FeatureDef.h"
 #include "Sim/Objects/SolidObjectDef.h"
+#include "Sim/Misc/Team.h"
 #include "Sim/Units/Unit.h"
 #include "Sim/Units/UnitDef.h"
 #include "Sim/Units/CommandAI/CommandDescription.h"
@@ -2011,4 +2012,45 @@ void LuaUtils::TracyRemoveAlsoExtras(char* script)
 			script += 18;
 	}
 #endif
+}
+
+void LuaUtils::PushTeamResource(lua_State* L, const CTeam* team, float current, float storage, float pull, float income, float expense, float share, float excess, const char* name)
+{
+	lua_pushstring(L, name);
+	lua_newtable(L);
+	LuaPushNamedNumber(L, "current", current);
+	LuaPushNamedNumber(L, "storage", storage);
+	LuaPushNamedNumber(L, "pull", pull);
+	LuaPushNamedNumber(L, "income", income);
+	LuaPushNamedNumber(L, "expense", expense);
+	LuaPushNamedNumber(L, "shareSlider", share);
+	LuaPushNamedNumber(L, "excess", excess);
+	lua_pushstring(L, name);
+	lua_setfield(L, -2, "resourceType");
+	lua_rawset(L, -3);
+}
+
+void LuaUtils::ParseEconomyResult(lua_State* L, CTeam* team, float& current, float& sent, float& received, bool isMetal)
+{
+	lua_getfield(L, -1, "current");
+	if (lua_isnumber(L, -1)) current = (float)lua_tonumber(L, -1);
+	lua_pop(L, 1);
+
+	lua_getfield(L, -1, "sent");
+	if (lua_isnumber(L, -1)) {
+		const float val = (float)lua_tonumber(L, -1);
+		sent += val;
+		if (isMetal) team->GetCurrentStats().metalSent += val;
+		else         team->GetCurrentStats().energySent += val;
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, -1, "received");
+	if (lua_isnumber(L, -1)) {
+		const float val = (float)lua_tonumber(L, -1);
+		received += val;
+		if (isMetal) team->GetCurrentStats().metalReceived += val;
+		else         team->GetCurrentStats().energyReceived += val;
+	}
+	lua_pop(L, 1);
 }

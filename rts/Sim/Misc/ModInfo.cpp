@@ -2,6 +2,7 @@
 
 
 #include "ModInfo.h"
+#include "GlobalConstants.h"
 
 #include "Lua/LuaParser.h"
 #include "Lua/LuaSyncedRead.h"
@@ -148,6 +149,8 @@ void CModInfo::ResetState()
 		allowTake = true;
 
 		allowEnginePlayerlist = true;
+		
+		game_economy = false;
 
 		useStartPositionSelecter = true;
 	}
@@ -210,6 +213,8 @@ void CModInfo::Init(const std::string& modFileName)
 		nativeExcessSharing = system.GetBool("nativeExcessSharing", nativeExcessSharing);
 		allowTake = system.GetBool("allowTake", allowTake);
 		allowEnginePlayerlist = system.GetBool("allowEnginePlayerlist", allowEnginePlayerlist);
+		
+		game_economy = system.GetBool("game_economy", game_economy);
 
 		useStartPositionSelecter = system.GetBool("useStartPositionSelecter", useStartPositionSelecter);
 	}
@@ -402,4 +407,5 @@ void CModInfo::Init(const std::string& modFileName)
 	smoothMeshSmoothRadius                   = std::max  (smoothMeshSmoothRadius                  ,    1          );
 	unitQuadPositionUpdateRate               = std::clamp(unitQuadPositionUpdateRate              ,    1    ,   15);
 }
+
 

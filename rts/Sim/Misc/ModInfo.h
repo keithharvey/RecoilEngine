@@ -247,6 +247,7 @@ public:
 	bool nativeExcessSharing;
 	bool allowTake;
 	bool allowEnginePlayerlist;
+	bool game_economy;
 
 	// how often to report wind speed/direction to wind gens
 	int windChangeReportPeriod;
@@ -258,3 +259,4 @@ public:
 extern CModInfo modInfo;
 
 #endif // MOD_INFO_H
+ 

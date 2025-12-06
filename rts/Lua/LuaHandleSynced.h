@@ -56,8 +56,14 @@ class CSyncedLuaHandle : public CLuaHandle
 	friend class CSplitLuaHandle;
 
 	public: // call-ins
+		// Override WantsEvent and HasCallIn to include manually registered controllers
+		bool WantsEvent(const std::string& name) override;
+		bool HasCallIn(lua_State* L, const std::string& name) const override;
+
 		bool CommandFallback(const CUnit* unit, const Command& cmd) override;
 		bool AllowCommand(const CUnit* unit, const Command& cmd, int playerNum, bool fromSynced, bool fromLua) override;
+		void ProcessEconomy(int gameFrame) override;
+		bool TeamShare(int teamID, int targetTeamID) override;
 
 		std::pair <bool, bool> AllowUnitCreation(const UnitDef* unitDef, const CUnit* builder, const BuildInfo* buildInfo) override;
 		bool AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture) override;
@@ -124,6 +130,22 @@ class CSyncedLuaHandle : public CLuaHandle
 
 		bool SyncedActionFallback(const std::string& line, int playerID) override;
 
+	public:
+		// Economy Controller
+		void SetEconomyController(int tableRef, int processEconomyRef);
+		int GetEconomyControllerTable() const { return economyControllerTableRef; }
+		int GetProcessEconomyRef() const { return processEconomyRef; }
+		int GetEconomyFunctionRef(const char* name) const;
+
+		// Clear all controller refs (called before Lua state swap)
+		void ClearControllerRefs();
+
+		// Unit Transfer Controller
+		void SetUnitTransferController(int tableRef, int allowUnitTransferRef, int teamShareRef);
+		int GetUnitTransferControllerTable() const { return unitTransferControllerTableRef; }
+		int GetAllowUnitTransferRef() const { return allowUnitTransferRef; }
+		int GetTeamShareRef() const { return teamShareRef; }
+
 	protected:
 		CSyncedLuaHandle(CSplitLuaHandle* base, const std::string& name, int order);
 		virtual ~CSyncedLuaHandle();
@@ -139,6 +161,15 @@ class CSyncedLuaHandle : public CLuaHandle
 
 	protected:
 		CSplitLuaHandle& base;
+
+		// Economy controller refs
+		int economyControllerTableRef = LUA_NOREF;
+		int processEconomyRef = LUA_NOREF;
+
+		// Unit transfer controller refs
+		int unitTransferControllerTableRef = LUA_NOREF;
+		int allowUnitTransferRef = LUA_NOREF;
+		int teamShareRef = LUA_NOREF;
 
 		spring::unordered_map<std::string, std::string> textCommands; // name, help
 

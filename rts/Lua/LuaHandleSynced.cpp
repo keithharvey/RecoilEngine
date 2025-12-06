@@ -34,6 +34,7 @@
 #include "Game/Game.h"
 #include "Game/WordCompletion.h"
 #include "Sim/Misc/GlobalSynced.h"
+#include "Sim/Misc/ModInfo.h"
 #include "Sim/Misc/TeamHandler.h"
 #include "Sim/Features/FeatureDef.h"
 #include "Sim/Features/FeatureDefHandler.h"
@@ -48,11 +49,18 @@
 #include "System/creg/SerializeLuaState.h"
 #include "System/FileSystem/FileHandler.h"
 #include "System/Log/ILog.h"
+#include "System/Misc/SpringTime.h"
+
+#include <vector>
+#include <utility>
+
+#include "System/Audit/EconomyAudit.h"
 #include "System/SpringMath.h"
 #include "System/LoadLock.h"
 
 #include "System/Misc/TracyDefs.h"
 
+#include <ranges>
 
 LuaRulesParams::Params  CSplitLuaHandle::gameParams;
 
@@ -432,8 +440,73 @@ CSyncedLuaHandle::~CSyncedLuaHandle()
 {
 	// kill all unitscripts running in this handle
 	CLuaUnitScript::HandleFreed(this);
+
+	// Clean up controller refs
+	if (L != nullptr) {
+		if (economyControllerTableRef != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, economyControllerTableRef);
+		if (processEconomyRef != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, processEconomyRef);
+		if (unitTransferControllerTableRef != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, unitTransferControllerTableRef);
+		if (allowUnitTransferRef != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, allowUnitTransferRef);
+		if (teamShareRef != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, teamShareRef);
+	}
 }
 
+void CSyncedLuaHandle::SetEconomyController(int tableRef, int procEconRef)
+{
+	// Release old refs
+	if (L != nullptr) {
+		if (economyControllerTableRef != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, economyControllerTableRef);
+		if (processEconomyRef != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, processEconomyRef);
+	}
+	economyControllerTableRef = tableRef;
+	processEconomyRef = procEconRef;
+}
+
+void CSyncedLuaHandle::SetUnitTransferController(int tableRef, int allowTransferRef, int teamShareRefArg)
+{
+	// Release old refs
+	if (L != nullptr) {
+		if (unitTransferControllerTableRef != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, unitTransferControllerTableRef);
+		if (allowUnitTransferRef != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, allowUnitTransferRef);
+		if (teamShareRef != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, teamShareRef);
+	}
+	unitTransferControllerTableRef = tableRef;
+	allowUnitTransferRef = allowTransferRef;
+	teamShareRef = teamShareRefArg;
+}
+
+void CSyncedLuaHandle::ClearControllerRefs()
+{
+	economyControllerTableRef = LUA_NOREF;
+	processEconomyRef = LUA_NOREF;
+	unitTransferControllerTableRef = LUA_NOREF;
+	allowUnitTransferRef = LUA_NOREF;
+	teamShareRef = LUA_NOREF;
+}
+
+bool CSyncedLuaHandle::HasCallIn(lua_State* L, const std::string& name) const
+{
+	if (name == "ProcessEconomy" && processEconomyRef != LUA_NOREF)
+		return true;
+	return CLuaHandle::HasCallIn(L, name);
+}
+
+bool CSyncedLuaHandle::WantsEvent(const std::string& name)
+{
+	if (!IsValid())
+		return false;
+	return HasCallIn(L, name);
+}
 
 bool CSyncedLuaHandle::Init(std::string code, const std::string& file)
 {
@@ -446,6 +519,8 @@ bool CSyncedLuaHandle::Init(std::string code, const std::string& file)
 	watchExplosionDefs.resize(weaponDefHandler->NumWeaponDefs(), false);
 	watchProjectileDefs.resize(weaponDefHandler->NumWeaponDefs() + 1, false); // last bit controls piece-projectiles
 	watchAllowTargetDefs.resize(weaponDefHandler->NumWeaponDefs(), false);
+
+	LOG("[CSyncedLuaHandle::Init] game_economy=%s", modInfo.game_economy ? "true" : "false");
 
 	// load the standard libraries
 	SPRING_LUA_OPEN_LIB(L, luaopen_base);
@@ -620,6 +695,188 @@ bool CSyncedLuaHandle::CommandFallback(const CUnit* unit, const Command& cmd)
 	lua_pop(L, 1);
 	return remove; // return 'true' to remove the command
 }
+bool CSyncedLuaHandle::TeamShare(int teamID, int targetTeamID)
+{
+	// Use controller ref if registered, otherwise fall back to global function
+	if (teamShareRef != LUA_NOREF) {
+		LUA_CALL_IN_CHECK(L, true);
+		lua_rawgeti(L, LUA_REGISTRYINDEX, teamShareRef);
+		if (!lua_isfunction(L, -1)) {
+			lua_pop(L, 1);
+			return true;
+		}
+		lua_pushnumber(L, teamID);
+		lua_pushnumber(L, targetTeamID);
+
+		if (lua_pcall(L, 2, 0, 0) != 0) {
+			const char* err = lua_tostring(L, -1);
+			LOG_L(L_ERROR, "[TeamShare] Controller error: %s", err ? err : "unknown");
+			lua_pop(L, 1);
+		}
+		return true; // Controller handled it
+	}
+
+	// Fallback to global function (legacy path)
+	static const LuaHashString cmdStr("TeamShare");
+	if (!cmdStr.GetGlobalFunc(L))
+		return true;
+
+	LUA_CALL_IN_CHECK(L, true);
+	lua_pushnumber(L, teamID);
+	lua_pushnumber(L, targetTeamID);
+
+	if (!RunCallIn(L, cmdStr, 2, 1))
+		return true;
+
+	const bool allow = luaL_optboolean(L, -1, true);
+	lua_pop(L, 1);
+	return allow;
+}
+
+/**
+ * @brief Processes the global economy for a given frame.
+ * 
+ * This is the primary entry point for the "ProcessEconomy" path. The engine:
+ * 1. Builds a Lua table containing all team resource states.
+ * 2. Dispatches to the registered Lua economy controller via lua_pcall.
+ * 3. Parses the returned results table and applies resource changes via C++.
+ * 
+ * The Lua controller (game_resource_transfer_controller.lua) runs the waterfill
+ * solver and returns an array of {teamId, resourceType, current, sent, received}.
+ * 
+ * Breakpoints are recorded for audit comparison:
+ * - CppMunge: Time spent building the teams table in C++.
+ * - LuaTotal: Time spent within the Lua pcall (solver + logging).
+ * - CppSetters: Time spent applying results back to the engine.
+ *
+ * @param gameFrame The current simulation frame.
+ */
+void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
+{
+	ZoneScopedN("ProcessEconomy");
+	const spring_time startTime = spring_gettime();
+
+	if (!IsValid())
+		return;
+
+	if (processEconomyRef == LUA_NOREF)
+		return;
+
+	economyAudit.Begin("PE", gameFrame);
+
+	LUA_CALL_IN_CHECK(L);
+	lua_checkstack(L, 8);
+
+	// Get the controller function from registry
+	lua_rawgeti(L, LUA_REGISTRYINDEX, processEconomyRef);
+	if (!lua_isfunction(L, -1)) {
+		lua_pop(L, 1);
+		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Controller ref=%d is NOT a function!", gameFrame, processEconomyRef);
+		economyAudit.End();
+		return;
+	}
+
+	// Push gameFrame
+	lua_pushnumber(L, gameFrame);
+
+	int teamCount = 0;
+	{
+		ZoneScopedN("PE_CppMunge");
+
+		// Create and push teams table
+		lua_newtable(L);
+		for (int teamID = 0; teamID < teamHandler.ActiveTeams(); ++teamID) {
+			CTeam* team = teamHandler.Team(teamID);
+			if (team == nullptr || team->isDead)
+				continue;
+
+			lua_pushnumber(L, teamID);
+			lua_newtable(L);
+
+			// Team metadata
+			lua_pushliteral(L, "allyTeam");
+			lua_pushnumber(L, team->teamAllyteam);
+			lua_rawset(L, -3);
+
+			lua_pushliteral(L, "isDead");
+			lua_pushboolean(L, team->isDead);
+			lua_rawset(L, -3);
+
+			LuaUtils::PushTeamResource(L, team, team->res.metal, team->resStorage.metal, team->resPull.metal, team->resIncome.metal, team->resExpense.metal, team->resShare.metal, team->resDelayedShare.metal, "metal");
+			LuaUtils::PushTeamResource(L, team, team->res.energy, team->resStorage.energy, team->resPull.energy, team->resIncome.energy, team->resExpense.energy, team->resShare.energy, team->resDelayedShare.energy, "energy");
+
+			lua_rawset(L, -3);
+			teamCount++;
+		}
+	}
+
+	economyAudit.Breakpoint("CppMunge");
+	economyAudit.SaveCheckpoint(); // Save time before entering Lua
+	TracyPlot("Economy/TeamCount", static_cast<int64_t>(teamCount));
+
+	// Call the Lua controller
+	if (lua_pcall(L, 2, 1, 0) != 0) {
+		const char* err = lua_tostring(L, -1);
+		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Lua pcall error: %s", gameFrame, err ? err : "unknown");
+		lua_pop(L, 1);
+		economyAudit.End();
+		return;
+	}
+
+	economyAudit.BreakpointAbsolute("LuaTotal"); // Measures from checkpoint (all Lua time)
+
+	if (!lua_istable(L, -1)) {
+		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Lua did not return a table!", gameFrame);
+		lua_pop(L, 1);
+		economyAudit.End();
+		return;
+	}
+
+	{
+		ZoneScopedN("PE_CppSetters");
+
+		// Process returned table - apply changes to teams
+		int processedEntries = 0;
+		for (lua_pushnil(L); lua_next(L, -2) != 0; lua_pop(L, 1)) {
+			if (!lua_istable(L, -1))
+				continue;
+
+			lua_getfield(L, -1, "teamId");
+			const int teamID = (int)luaL_optnumber(L, -1, -1);
+			lua_pop(L, 1);
+
+			CTeam* team = teamHandler.Team(teamID);
+			if (team == nullptr)
+				continue;
+
+			lua_getfield(L, -1, "resourceType");
+			const std::string resType = luaL_optstring(L, -1, "");
+			lua_pop(L, 1);
+
+			if (resType == "metal") {
+				LuaUtils::ParseEconomyResult(L, team, team->res.metal, team->resSent.metal, team->resReceived.metal, true);
+			} else if (resType == "energy") {
+				LuaUtils::ParseEconomyResult(L, team, team->res.energy, team->resSent.energy, team->resReceived.energy, false);
+			}
+			processedEntries++;
+		}
+		lua_pop(L, 1);
+	}
+
+	economyAudit.Breakpoint("CppSetters");
+
+	// Zero accumulated excess after ProcessEconomy has used it
+	for (int teamID = 0; teamID < teamHandler.ActiveTeams(); ++teamID) {
+		CTeam* team = teamHandler.Team(teamID);
+		if (team != nullptr)
+			team->resDelayedShare = 0.0f;
+	}
+
+	economyAudit.End();
+
+	const auto totalUs = (spring_gettime() - startTime).toMicroSecsi();
+	TracyPlot("Economy/TotalTime_us", static_cast<int64_t>(totalUs));
+}
 
 
 /*** Called when the command is given, before the unit's queue is altered.
@@ -726,6 +983,37 @@ std::pair <bool, bool> CSyncedLuaHandle::AllowUnitCreation(
 bool CSyncedLuaHandle::AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
+
+	// Use controller ref if registered
+	if (allowUnitTransferRef != LUA_NOREF) {
+		LUA_CALL_IN_CHECK(L, true);
+		luaL_checkstack(L, 7, __func__);
+
+		lua_rawgeti(L, LUA_REGISTRYINDEX, allowUnitTransferRef);
+		if (!lua_isfunction(L, -1)) {
+			lua_pop(L, 1);
+			return true;
+		}
+
+		lua_pushnumber(L, unit->id);
+		lua_pushnumber(L, unit->unitDef->id);
+		lua_pushnumber(L, unit->team);
+		lua_pushnumber(L, newTeam);
+		lua_pushboolean(L, capture);
+
+		if (lua_pcall(L, 5, 1, 0) != 0) {
+			const char* err = lua_tostring(L, -1);
+			LOG_L(L_ERROR, "[AllowUnitTransfer] Controller error: %s", err ? err : "unknown");
+			lua_pop(L, 1);
+			return true;
+		}
+
+		const bool allow = luaL_optboolean(L, -1, true);
+		lua_pop(L, 1);
+		return allow;
+	}
+
+	// Fallback to global function (legacy path)
 	LUA_CALL_IN_CHECK(L, true);
 	luaL_checkstack(L, 7, __func__);
 
@@ -1218,7 +1506,6 @@ bool CSyncedLuaHandle::AllowResourceTransfer(int oldTeam, int newTeam, const cha
 	lua_pop(L, 1);
 	return allow;
 }
-
 
 /*** Determines if this unit can be controlled directly in FPS view.
  *
@@ -2481,6 +2768,9 @@ bool CSplitLuaHandle::SwapSyncedHandle(lua_State* L, lua_State* L_GC)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	eventHandler.RemoveClient(&syncedLuaHandle);
+
+	// Clear controller refs before closing the Lua state - they're about to become invalid
+	syncedLuaHandle.ClearControllerRefs();
 
 	LUA_CLOSE(&syncedLuaHandle.L);
 	syncedLuaHandle.SetLuaStates(L, L_GC);

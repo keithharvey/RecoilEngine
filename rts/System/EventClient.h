@@ -222,6 +222,8 @@ class CEventClient
 		virtual bool AllowFeatureBuildStep(const CUnit* builder, const CFeature* feature, float part) { return true; }
 		virtual bool AllowResourceLevel(int teamID, const string& type, float level) { return true; }
 		virtual bool AllowResourceTransfer(int oldTeam, int newTeam, const char* type, float amount) { return true; }
+		virtual bool TeamShare(int teamID, int targetTeamID) { return true; }
+		virtual void ProcessEconomy(int gameFrame) {}
 		virtual bool AllowDirectUnitControl(int playerID, const CUnit* unit) { return true; }
 		virtual bool AllowBuilderHoldFire(const CUnit* unit, int action) { return true; }
 		virtual bool AllowStartPosition(int playerID, int teamID, unsigned char readyState, const float3& clampedPos, const float3& rawPickPos) { return true; }

@@ -56,6 +56,7 @@ class CEventHandler
 		void GamePaused(int playerID, bool paused);
 		void GameFrame(int gameFrame);
 		void GameFramePost(int gameFrame);
+		void ProcessEconomy(int gameFrame);
 		void GameID(const unsigned char* gameID, unsigned int numBytes);
 
 		void TeamDied(int teamID);
@@ -159,6 +160,7 @@ class CEventHandler
 		bool AllowFeatureBuildStep(const CUnit* builder, const CFeature* feature, float part);
 		bool AllowResourceLevel(int teamID, const string& type, float level);
 		bool AllowResourceTransfer(int oldTeam, int newTeam, const char* type, float amount);
+		bool TeamShare(int teamID, int targetTeamID);
 		bool AllowDirectUnitControl(int playerID, const CUnit* unit);
 		bool AllowBuilderHoldFire(const CUnit* unit, int action);
 		bool AllowStartPosition(int playerID, int teamID, unsigned char readyState, const float3& clampedPos, const float3& rawPickPos);

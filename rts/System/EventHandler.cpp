@@ -5,7 +5,11 @@
 #include "Lua/LuaCallInCheck.h"
 #include "Lua/LuaOpenGL.h"  // FIXME -- should be moved
 
+#include "Sim/Misc/ModInfo.h"
+#include "Sim/Misc/Team.h"
+#include "Sim/Misc/TeamHandler.h"
 #include "System/Config/ConfigHandler.h"
+#include "System/Exceptions.h"
 #include "System/Platform/Threading.h"
 #include "System/GlobalConfig.h"
 
@@ -355,7 +359,16 @@ bool CEventHandler::AllowResourceLevel(int teamID, const std::string& type, floa
 bool CEventHandler::AllowResourceTransfer(int oldTeam, int newTeam, const char* type, float amount)
 {
 	ZoneScoped;
+	if (modInfo.game_economy)
+		throw user_error("AllowResourceTransfer is deprecated when game_economy is enabled");
+
 	return ControlIterateDefTrue(listAllowResourceTransfer, &CEventClient::AllowResourceTransfer, oldTeam, newTeam, type, amount);
+}
+
+bool CEventHandler::TeamShare(int teamID, int targetTeamID)
+{
+	ZoneScoped;
+	return ControlIterateDefTrue(listTeamShare, &CEventClient::TeamShare, teamID, targetTeamID);
 }
 
 
@@ -559,6 +572,12 @@ void CEventHandler::GameFramePost(int gameFrame)
 {
 	ZoneScoped;
 	ITERATE_EVENTCLIENTLIST(GameFramePost, gameFrame);
+}
+
+void CEventHandler::ProcessEconomy(int gameFrame)
+{
+	ZoneScoped;
+	ITERATE_EVENTCLIENTLIST(ProcessEconomy, gameFrame);
 }
 
 void CEventHandler::GameProgress(int gameFrame)

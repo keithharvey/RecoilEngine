@@ -35,6 +35,7 @@
 
 struct SolidObjectDef;
 struct SCommandDescription;
+class CTeam;
 static constexpr int LUA_TABLE_VALUE_INDEX = -1;
 static constexpr int LUA_TABLE_KEY_INDEX = -2;
 
@@ -130,6 +131,9 @@ class LuaUtils {
 		static void PushCommandParamsTable(lua_State* L, const Command& cmd, bool subtable);
 		static void PushCommandOptionsTable(lua_State* L, const Command& cmd, bool subtable);
 		static int  PushUnitAndCommand(lua_State* L, const CUnit* unit, const Command& cmd);
+
+		static void PushTeamResource(lua_State* L, const CTeam* team, float current, float storage, float pull, float income, float expense, float share, const char* name);
+		static void ParseTeamResource(lua_State* L, CTeam* team, float& current, float& sent, float& received, float& excess, const char* name);
 
 		static Command ParseCommand(lua_State* L, const char* caller, int idIndex);
 		static Command ParseCommandTable(lua_State* L, const char* caller, int table);

@@ -116,7 +116,7 @@ void CTeamHandler::SetDefaultStartPositions(const CGameSetup* setup)
 	}
 }
 
-void CTeamHandler::HandleFrameExcess()
+void CTeamHandler::HandleFrameExcess(int frameNum)
 {
 	std::map <int, SResourcePack> excesses;
 	for (const auto &team : teams)
@@ -131,7 +131,34 @@ void CTeamHandler::HandleFrameExcess()
 	 * update would reduce control, and having the engine
 	 * handle excess natively outside slow update would
 	 * be inconsistent with other native resource handling. */
-	if (!eventHandler.ResourceExcess(excesses))
+	
+	// For audit modes, only handle ResourceExcess on SlowUpdate frames
+	// to match ProcessEconomy timing for fair comparison
+	const bool isSlowUpdate = (frameNum % TEAM_SLOWUPDATE_RATE) == 0;
+	
+	bool skipResourceExcess = false;
+	if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_PROCESS_ECONOMY) {
+		// ProcessEconomy mode: never call ResourceExcess
+		skipResourceExcess = true;
+	} else if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_ALTERNATE) {
+		// Alternate mode: only call ResourceExcess on SlowUpdate frames, on even cycles
+		if (!isSlowUpdate) {
+			skipResourceExcess = true;
+		} else {
+			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
+			skipResourceExcess = (slowUpdateCycle % 2 == 1);
+		}
+	} else if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_RESOURCE_EXCESS) {
+		// ResourceExcess mode: only call on SlowUpdate frames for fair comparison
+		skipResourceExcess = !isSlowUpdate;
+	}
+	
+	bool luaHandled = false;
+	if (!skipResourceExcess) {
+		luaHandled = eventHandler.ResourceExcess(excesses);
+	}
+	
+	if (!luaHandled)
 		for (auto &team : teams)
 			team.resDelayedShare += team.resExcessThisFrame;
 
@@ -143,7 +170,7 @@ void CTeamHandler::GameFrame(int frameNum)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 
-	HandleFrameExcess();
+	HandleFrameExcess(frameNum);
 
 	if ((frameNum % TEAM_SLOWUPDATE_RATE) != 0)
 		return;
@@ -156,7 +183,20 @@ void CTeamHandler::GameFrame(int frameNum)
 	}
 
 	if (modInfo.game_economy) {
-		eventHandler.ProcessEconomy(frameNum);
+		// In RESOURCE_EXCESS audit mode, skip ProcessEconomy
+		// (ResourceExcess handles everything)
+		bool skipProcessEconomy = false;
+		if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_RESOURCE_EXCESS) {
+			skipProcessEconomy = true;
+		} else if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_ALTERNATE) {
+			// Alternate every SlowUpdate: use ProcessEconomy on odd cycles
+			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
+			skipProcessEconomy = (slowUpdateCycle % 2 == 0);
+		}
+		
+		if (!skipProcessEconomy) {
+			eventHandler.ProcessEconomy(frameNum);
+		}
 	}
 }
 

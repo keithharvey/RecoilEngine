@@ -150,6 +150,7 @@ void CModInfo::ResetState()
 		allowEnginePlayerlist = true;
 		
 		game_economy = false;
+		economy_audit_mode = ECONOMY_AUDIT_OFF;
 
 		useStartPositionSelecter = true;
 	}
@@ -214,6 +215,19 @@ void CModInfo::Init(const std::string& modFileName)
 		allowEnginePlayerlist = system.GetBool("allowEnginePlayerlist", allowEnginePlayerlist);
 		
 		game_economy = system.GetBool("game_economy", game_economy);
+
+		{
+			const std::string modeStr = system.GetString("economy_audit_mode", "off");
+			if (modeStr == "process_economy") {
+				economy_audit_mode = ECONOMY_AUDIT_PROCESS_ECONOMY;
+			} else if (modeStr == "resource_excess") {
+				economy_audit_mode = ECONOMY_AUDIT_RESOURCE_EXCESS;
+			} else if (modeStr == "alternate") {
+				economy_audit_mode = ECONOMY_AUDIT_ALTERNATE;
+			} else {
+				economy_audit_mode = ECONOMY_AUDIT_OFF;
+			}
+		}
 
 		useStartPositionSelecter = system.GetBool("useStartPositionSelecter", useStartPositionSelecter);
 	}

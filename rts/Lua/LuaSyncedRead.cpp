@@ -40,6 +40,8 @@
 #include "Sim/Misc/SmoothHeightMesh.h"
 #include "Sim/Misc/QuadField.h"
 #include "Sim/Misc/TeamHandler.h"
+#include "Sim/Misc/GlobalConstants.h"
+#include "Sim/Misc/ModInfo.h"
 #include "Sim/Misc/Wind.h"
 #include "Sim/Misc/CollisionHandler.h"
 #include "Sim/MoveTypes/StrafeAirMoveType.h"
@@ -119,6 +121,8 @@ bool LuaSyncedRead::PushEntries(lua_State* L)
 
 	REGISTER_LUA_CFUNC(GetGameFrame);
 	REGISTER_LUA_CFUNC(GetGameSeconds);
+	REGISTER_LUA_CFUNC(IsProcessEconomyActive);
+	REGISTER_LUA_CFUNC(IsResourceExcessActive);
 
 	REGISTER_LUA_CFUNC(GetGameRulesParam);
 	REGISTER_LUA_CFUNC(GetGameRulesParams);
@@ -923,6 +927,82 @@ int LuaSyncedRead::GetGameFrame(lua_State* L)
 int LuaSyncedRead::GetGameSeconds(lua_State* L)
 {
 	lua_pushnumber(L, gs->GetLuaSimFrame() * INV_GAME_SPEED);
+	return 1;
+}
+
+
+/***
+ * Check if ProcessEconomy path should be active for the given/current frame.
+ * In ALTERNATE mode, returns true on odd SlowUpdate cycles.
+ * 
+ * @function Spring.IsProcessEconomyActive
+ * @param frameNum number? optional frame number (defaults to current)
+ * @return boolean active
+ */
+int LuaSyncedRead::IsProcessEconomyActive(lua_State* L)
+{
+	const int frameNum = luaL_optint(L, 1, gs->GetLuaSimFrame());
+	
+	switch (modInfo.economy_audit_mode) {
+		case CModInfo::ECONOMY_AUDIT_OFF:
+		case CModInfo::ECONOMY_AUDIT_PROCESS_ECONOMY:
+			lua_pushboolean(L, true);
+			break;
+		case CModInfo::ECONOMY_AUDIT_RESOURCE_EXCESS:
+			lua_pushboolean(L, false);
+			break;
+		case CModInfo::ECONOMY_AUDIT_ALTERNATE: {
+			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
+			lua_pushboolean(L, (slowUpdateCycle % 2 == 1));
+			break;
+		}
+		default:
+			lua_pushboolean(L, true);
+			break;
+	}
+	return 1;
+}
+
+
+/***
+ * Check if ResourceExcess path should be active for the given/current frame.
+ * Returns true only on SlowUpdate frames when the ResourceExcess path is enabled.
+ * In ALTERNATE mode, returns true on even SlowUpdate cycles.
+ * 
+ * @function Spring.IsResourceExcessActive
+ * @param frameNum number? optional frame number (defaults to current)
+ * @return boolean active
+ */
+int LuaSyncedRead::IsResourceExcessActive(lua_State* L)
+{
+	const int frameNum = luaL_optint(L, 1, gs->GetLuaSimFrame());
+	const bool isSlowUpdate = (frameNum % TEAM_SLOWUPDATE_RATE) == 0;
+	
+	switch (modInfo.economy_audit_mode) {
+		case CModInfo::ECONOMY_AUDIT_OFF:
+			// Default mode: ResourceExcess runs on SlowUpdate frames
+			lua_pushboolean(L, isSlowUpdate);
+			break;
+		case CModInfo::ECONOMY_AUDIT_PROCESS_ECONOMY:
+			lua_pushboolean(L, false);
+			break;
+		case CModInfo::ECONOMY_AUDIT_RESOURCE_EXCESS:
+			// ResourceExcess only runs on SlowUpdate for fair comparison
+			lua_pushboolean(L, isSlowUpdate);
+			break;
+		case CModInfo::ECONOMY_AUDIT_ALTERNATE: {
+			if (!isSlowUpdate) {
+				lua_pushboolean(L, false);
+			} else {
+				const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
+				lua_pushboolean(L, (slowUpdateCycle % 2 == 0));
+			}
+			break;
+		}
+		default:
+			lua_pushboolean(L, isSlowUpdate);
+			break;
+	}
 	return 1;
 }
 

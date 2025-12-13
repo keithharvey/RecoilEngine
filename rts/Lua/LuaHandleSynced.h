@@ -61,6 +61,8 @@ class CSyncedLuaHandle : public CLuaHandle
 		void ProcessEconomy(int gameFrame) override;
 		bool TeamShare(int teamID, int targetTeamID) override;
 
+		bool ResourceExcess(const std::map <int, SResourcePack>& excess) override;
+
 		std::pair <bool, bool> AllowUnitCreation(const UnitDef* unitDef, const CUnit* builder, const BuildInfo* buildInfo) override;
 		bool AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture) override;
 		bool AllowUnitBuildStep(const CUnit* builder, const CUnit* unit, float part) override;

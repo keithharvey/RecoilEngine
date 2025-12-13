@@ -46,6 +46,7 @@ CR_REG_METADATA(CTeam, (
 	CR_MEMBER(resPrevExpense),
 	CR_MEMBER(resShare),
 	CR_MEMBER(resDelayedShare),
+	CR_MEMBER(resExcessThisFrame),
 	CR_MEMBER(resSent),
 	CR_MEMBER(resPrevSent),
 	CR_MEMBER(resReceived),
@@ -160,7 +161,7 @@ void CTeam::AddMetal(float amount, bool useIncomeMultiplier)
 	if (res.metal <= resStorage.metal)
 		return;
 
-	resDelayedShare.metal += (res.metal - resStorage.metal);
+	resExcessThisFrame.metal += (res.metal - resStorage.metal);
 	res.metal = resStorage.metal;
 }
 
@@ -177,7 +178,7 @@ void CTeam::AddEnergy(float amount, bool useIncomeMultiplier)
 		return;
 
 	if (res.energy > resStorage.energy) {
-		resDelayedShare.energy += (res.energy - resStorage.energy);
+		resExcessThisFrame.energy += (res.energy - resStorage.energy);
 		res.energy = resStorage.energy;
 	}
 }
@@ -203,8 +204,9 @@ void CTeam::AddResources(SResourcePack amount, bool useIncomeMultiplier)
 		if (res[i] <= resStorage[i])
 			continue;
 
+		resExcessThisFrame[i] += (res[i] - resStorage[i]);
 		if (!modInfo.game_economy) {
-			resDelayedShare[i] += (res[i] - resStorage[i]);
+			resDelayedShare[i] += resExcessThisFrame[i];
 			res[i] = resStorage[i];
 		}
 	}

@@ -60,6 +60,8 @@ class LuaSyncedCtrl
 		static int SetUnitTransferController(lua_State* L);
 		static int GetAuditTimer(lua_State* L);
 
+		static int AddTeamResourceStats(lua_State* L);
+
 		static int CallCOBScript(lua_State* L);
 		static int GetCOBScriptID(lua_State* L);
 

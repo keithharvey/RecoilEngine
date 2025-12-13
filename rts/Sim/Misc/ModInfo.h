@@ -249,6 +249,14 @@ public:
 	bool allowEnginePlayerlist;
 	bool game_economy;
 
+	enum EconomyAuditMode {
+		ECONOMY_AUDIT_OFF = 0,           // No special audit mode
+		ECONOMY_AUDIT_PROCESS_ECONOMY,   // Only ProcessEconomy path (existing approach)
+		ECONOMY_AUDIT_RESOURCE_EXCESS,   // Only ResourceExcess path (new approach)
+		ECONOMY_AUDIT_ALTERNATE,         // Alternate between paths each SlowUpdate
+	};
+	EconomyAuditMode economy_audit_mode;
+
 	// how often to report wind speed/direction to wind gens
 	int windChangeReportPeriod;
 

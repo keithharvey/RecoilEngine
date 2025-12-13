@@ -222,6 +222,18 @@ bool LuaConstGame::PushEntries(lua_State* L)
 		LuaPushNamedBool  (L, "allowEnginePlayerlist", modInfo.allowEnginePlayerlist);
 		/*** @field Game.nativeExcessSharing boolean whether the engine handles excess resources overflow */
 		LuaPushNamedBool  (L, "nativeExcessSharing", modInfo.nativeExcessSharing);
+		
+		/*** @field Game.economyAuditMode string economy audit mode: "off", "process_economy", "resource_excess", or "alternate" */
+		{
+			const char* modeStr = "off";
+			switch (modInfo.economy_audit_mode) {
+				case CModInfo::ECONOMY_AUDIT_PROCESS_ECONOMY: modeStr = "process_economy"; break;
+				case CModInfo::ECONOMY_AUDIT_RESOURCE_EXCESS: modeStr = "resource_excess"; break;
+				case CModInfo::ECONOMY_AUDIT_ALTERNATE:       modeStr = "alternate"; break;
+				default:                                      modeStr = "off"; break;
+			}
+			LuaPushNamedString(L, "economyAuditMode", modeStr);
+		}
 	}
 
 	if (archiveScanner != nullptr && mapInfo != nullptr) {

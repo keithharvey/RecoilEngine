@@ -161,9 +161,6 @@ namespace {
 		float& income    = (kind == ResourceKind::Metal) ? team->resIncome.metal     : team->resIncome.energy;
 		float& expense   = (kind == ResourceKind::Metal) ? team->resExpense.metal    : team->resExpense.energy;
 		float& share     = (kind == ResourceKind::Metal) ? team->resShare.metal      : team->resShare.energy;
-		float& sent      = (kind == ResourceKind::Metal) ? team->resSent.metal       : team->resSent.energy;
-		float& received  = (kind == ResourceKind::Metal) ? team->resReceived.metal   : team->resReceived.energy;
-		float& excess    = (kind == ResourceKind::Metal) ? team->resPrevExcess.metal : team->resPrevExcess.energy;
 
 		bool storageProvided = false;
 		float newStorage = storage;
@@ -198,39 +195,6 @@ namespace {
 		lua_getfield(L, absIdx, "current");
 		if (lua_isnumber(L, -1))
 			current = std::max(0.0f, (float)lua_tonumber(L, -1));
-		lua_pop(L, 1);
-
-		lua_getfield(L, absIdx, "sent");
-		if (lua_isnumber(L, -1)) {
-			const float val = (float)lua_tonumber(L, -1);
-			sent += val;
-			if (kind == ResourceKind::Metal)
-				team->GetCurrentStats().metalSent += val;
-			else
-				team->GetCurrentStats().energySent += val;
-		}
-		lua_pop(L, 1);
-
-		lua_getfield(L, absIdx, "received");
-		if (lua_isnumber(L, -1)) {
-			const float val = (float)lua_tonumber(L, -1);
-			received += val;
-			if (kind == ResourceKind::Metal)
-				team->GetCurrentStats().metalReceived += val;
-			else
-				team->GetCurrentStats().energyReceived += val;
-		}
-		lua_pop(L, 1);
-
-		lua_getfield(L, absIdx, "excess");
-		if (lua_isnumber(L, -1)) {
-			const float val = (float)lua_tonumber(L, -1);
-			excess += val;
-			if (kind == ResourceKind::Metal)
-				team->GetCurrentStats().metalExcess += val;
-			else
-				team->GetCurrentStats().energyExcess += val;
-		}
 		lua_pop(L, 1);
 
 		if (storageProvided)
@@ -1499,34 +1463,6 @@ luaL_error(L, "bad arguments");
 return 0;
 }
 
-
-/***
- * Resource snapshot returned by the economy controller.
- *
- * @class ResourceData
- * @x_helper
- *
- * @field current number? current stockpile
- * @field storage number? max storage
- * @field pull number? requested usage
- * @field income number? production income
- * @field expense number? expenditure
- * @field shareSlider number? share threshold slider
- * @field sent number? resources sent this frame
- * @field received number? resources received this frame
- * @field excess number? excess dumped this frame
- * @field resourceType ResourceName resource associated with the snapshot
- */
-
-/***
- * Convenience shape for metal + energy ResourceData pairs.
- *
- * @class TeamResourceSnapshot
- * @x_helper
- *
- * @field metal ResourceData
- * @field energy ResourceData
- */
 
 /***
  * Reads the current ResourceData snapshot for a single resource.

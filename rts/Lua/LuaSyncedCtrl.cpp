@@ -49,6 +49,21 @@
 #include "Sim/Misc/Wind.h"
 #include "Sim/MoveTypes/AAirMoveType.h"
 #include "Sim/Path/IPathManager.h"
+#include "System/Misc/SpringTime.h"
+
+namespace {
+	struct ScopedRESetterTimer {
+		spring_time start;
+		bool active;
+		ScopedRESetterTimer() {
+			active = LuaUtils::is_in_resource_excess;
+			if (active) start = spring_gettime();
+		}
+		~ScopedRESetterTimer() {
+			if (active) LuaUtils::re_cpp_setters_us += (spring_gettime() - start).toMicroSecsi();
+		}
+	};
+}
 #include "Sim/Projectiles/ExplosionGenerator.h"
 #include "Sim/Projectiles/Projectile.h"
 #include "Sim/Projectiles/PieceProjectile.h"
@@ -1582,6 +1597,7 @@ int LuaSyncedCtrl::GetTeamResourceData(lua_State* L)
  */
 int LuaSyncedCtrl::SetTeamResourceData(lua_State* L)
 {
+	ScopedRESetterTimer timer;
 	const int teamID = luaL_checkint(L, 1);
 
 	if (!teamHandler.IsValidTeam(teamID))
@@ -1627,6 +1643,7 @@ int LuaSyncedCtrl::SetTeamResourceData(lua_State* L)
  */
 int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 {
+	ScopedRESetterTimer timer;
 	const int teamID = luaL_checkint(L, 1);
 
 	if (modInfo.game_economy) {
@@ -1804,6 +1821,7 @@ int LuaSyncedCtrl::ShareTeamResource(lua_State* L)
  */
 int LuaSyncedCtrl::AddTeamResourceStats(lua_State* L)
 {
+	ScopedRESetterTimer timer;
 	const auto team = ParseTeam(L, __func__, 1);
 	if (team == nullptr)
 		return 0;

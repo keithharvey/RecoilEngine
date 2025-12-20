@@ -40,6 +40,9 @@ static const int maxDepth = 16;
 
 Json::Value LuaUtils::LuaStackDumper::root  = {};
 
+long LuaUtils::re_cpp_setters_us = 0;
+bool LuaUtils::is_in_resource_excess = false;
+
 /******************************************************************************/
 /******************************************************************************/
 
@@ -2029,40 +2032,27 @@ void LuaUtils::PushTeamResource(lua_State* L, const CTeam* team, float current, 
 	lua_rawset(L, -3);
 }
 
-void LuaUtils::ParseTeamResource(lua_State* L, CTeam* team, float& current, float& sent, float& received, float& excess, const char* name)
+void LuaUtils::ParseEconomyResult(lua_State* L, CTeam* team, float& current, float& sent, float& received, bool isMetal)
 {
-	lua_getfield(L, -1, name);
-	if (lua_istable(L, -1)) {
-		lua_getfield(L, -1, "current");
-		if (lua_isnumber(L, -1)) current = (float)lua_tonumber(L, -1);
-		lua_pop(L, 1);
+	lua_getfield(L, -1, "current");
+	if (lua_isnumber(L, -1)) current = (float)lua_tonumber(L, -1);
+	lua_pop(L, 1);
 
-		lua_getfield(L, -1, "sent");
-		if (lua_isnumber(L, -1)) {
-			const float val = (float)lua_tonumber(L, -1);
-			sent += val;
-			if (strcmp(name, "metal") == 0) team->GetCurrentStats().metalSent += val;
-			else if (strcmp(name, "energy") == 0) team->GetCurrentStats().energySent += val;
-		}
-		lua_pop(L, 1);
+	lua_getfield(L, -1, "sent");
+	if (lua_isnumber(L, -1)) {
+		const float val = (float)lua_tonumber(L, -1);
+		sent += val;
+		if (isMetal) team->GetCurrentStats().metalSent += val;
+		else         team->GetCurrentStats().energySent += val;
+	}
+	lua_pop(L, 1);
 
-		lua_getfield(L, -1, "received");
-		if (lua_isnumber(L, -1)) {
-			const float val = (float)lua_tonumber(L, -1);
-			received += val;
-			if (strcmp(name, "metal") == 0) team->GetCurrentStats().metalReceived += val;
-			else if (strcmp(name, "energy") == 0) team->GetCurrentStats().energyReceived += val;
-		}
-		lua_pop(L, 1);
-
-		lua_getfield(L, -1, "excess");
-		if (lua_isnumber(L, -1)) {
-			const float val = (float)lua_tonumber(L, -1);
-			excess += val;
-			if (strcmp(name, "metal") == 0) team->GetCurrentStats().metalExcess += val;
-			else if (strcmp(name, "energy") == 0) team->GetCurrentStats().energyExcess += val;
-		}
-		lua_pop(L, 1);
+	lua_getfield(L, -1, "received");
+	if (lua_isnumber(L, -1)) {
+		const float val = (float)lua_tonumber(L, -1);
+		received += val;
+		if (isMetal) team->GetCurrentStats().metalReceived += val;
+		else         team->GetCurrentStats().energyReceived += val;
 	}
 	lua_pop(L, 1);
 }

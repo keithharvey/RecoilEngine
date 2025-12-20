@@ -795,7 +795,7 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 		teamCount++;
 	}
 
-	stopwatch.Breakpoint("CppMunge");
+	stopwatch.Breakpoint("PE_CppMunge");
 
 	// Call the Lua controller
 	if (lua_pcall(L, 2, 1, 0) != 0) {
@@ -805,7 +805,7 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 		return;
 	}
 
-	stopwatch.Breakpoint("LuaTotal");
+	stopwatch.Breakpoint("PE_LuaTotal");
 
 	if (!lua_istable(L, -1)) {
 		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Lua did not return a table!", gameFrame);
@@ -814,26 +814,36 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 	}
 
 	// Process returned table - apply changes to teams
-	int processedTeams = 0;
+	int processedEntries = 0;
 	for (lua_pushnil(L); lua_next(L, -2) != 0; lua_pop(L, 1)) {
-		if (!lua_isnumber(L, -2) || !lua_istable(L, -1))
+		if (!lua_istable(L, -1))
 			continue;
 
-		const int teamID = lua_toint(L, -2);
+		lua_getfield(L, -1, "teamId");
+		const int teamID = (int)luaL_optnumber(L, -1, -1);
+		lua_pop(L, 1);
+
 		CTeam* team = teamHandler.Team(teamID);
 		if (team == nullptr)
 			continue;
 
-		LuaUtils::ParseTeamResource(L, team, team->res.metal, team->resSent.metal, team->resReceived.metal, team->resPrevExcess.metal, "metal");
-		LuaUtils::ParseTeamResource(L, team, team->res.energy, team->resSent.energy, team->resReceived.energy, team->resPrevExcess.energy, "energy");
-		processedTeams++;
+		lua_getfield(L, -1, "resourceType");
+		const std::string resType = luaL_optstring(L, -1, "");
+		lua_pop(L, 1);
+
+		if (resType == "metal") {
+			LuaUtils::ParseEconomyResult(L, team, team->res.metal, team->resSent.metal, team->resReceived.metal, true);
+		} else if (resType == "energy") {
+			LuaUtils::ParseEconomyResult(L, team, team->res.energy, team->resSent.energy, team->resReceived.energy, false);
+		}
+		processedEntries++;
 	}
 	lua_pop(L, 1);
 
-	stopwatch.Breakpoint("CppSetters");
+	stopwatch.Breakpoint("PE_CppSetters");
 
 	stopwatch.Log(gameFrame);
-	LOG_L(L_INFO, "[SolverAudit] frame=%d metric=Overall time_us=%ld teams=%d", gameFrame, stopwatch.Total(), processedTeams);
+	LOG_L(L_INFO, "[SolverAudit] frame=%d metric=PE_Overall time_us=%ld entries=%d", gameFrame, stopwatch.Total(), processedEntries);
 }
 
 
@@ -1482,6 +1492,12 @@ bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& exces
 	if (!cmdStr.GetGlobalFunc(L))
 		return false;
 
+	AuditStopwatch stopwatch;
+	stopwatch.Start();
+
+	LuaUtils::re_cpp_setters_us = 0;
+	LuaUtils::is_in_resource_excess = true;
+
 	lua_createtable(L, excesses.size(), 1);
 
 	for (const auto &[teamID, excess] : excesses) {
@@ -1493,11 +1509,22 @@ bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& exces
 		lua_rawseti(L, -2, teamID);
 	}
 
+	stopwatch.Breakpoint("RE_CppMunge");
+
 	if (!RunCallIn(L, cmdStr, 1, 1))
 		return false;
 
+	stopwatch.Breakpoint("RE_LuaTotal");
+
 	const bool handled = luaL_optboolean(L, -1, false);
 	lua_pop(L, 1);
+
+	LuaUtils::is_in_resource_excess = false;
+
+	stopwatch.Log(gs->frameNum);
+	LOG_L(L_INFO, "[SolverAudit] frame=%d metric=RE_CppSetters time_us=%ld", gs->frameNum, LuaUtils::re_cpp_setters_us);
+	LOG_L(L_INFO, "[SolverAudit] frame=%d metric=RE_Overall time_us=%ld teams=%d", gs->frameNum, stopwatch.Total(), (int)excesses.size());
+
 	return handled;
 }
 

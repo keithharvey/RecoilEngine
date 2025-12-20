@@ -45,6 +45,8 @@ namespace Json{
 
 class LuaUtils {
 	public:
+		static long re_cpp_setters_us;
+		static bool is_in_resource_excess;
 		struct ScopedStackChecker {
 		public:
 			ScopedStackChecker(lua_State* L, int returnVars = 0);
@@ -133,7 +135,7 @@ class LuaUtils {
 		static int  PushUnitAndCommand(lua_State* L, const CUnit* unit, const Command& cmd);
 
 		static void PushTeamResource(lua_State* L, const CTeam* team, float current, float storage, float pull, float income, float expense, float share, const char* name);
-		static void ParseTeamResource(lua_State* L, CTeam* team, float& current, float& sent, float& received, float& excess, const char* name);
+		static void ParseEconomyResult(lua_State* L, CTeam* team, float& current, float& sent, float& received, bool isMetal);
 
 		static Command ParseCommand(lua_State* L, const char* caller, int idIndex);
 		static Command ParseCommandTable(lua_State* L, const char* caller, int table);

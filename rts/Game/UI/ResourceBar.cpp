@@ -102,7 +102,8 @@ void CResourceBar::Draw()
 		const float x2 = metalbarx2;
 		const float y1 = metaly + 0.014f;
 		const float y2 = metaly + 0.020f;
-		const float sx[] = {(rcs.metal != 0.0f)? ((rcr.metal / rcs.metal) * metalbarlen): 0.0f, rshr.metal * metalbarlen};
+		const float metalRatio = (rcs.metal != 0.0f) ? (std::min(rcr.metal, rcs.metal) / rcs.metal) : 0.0f;
+		const float sx[] = {metalRatio * metalbarlen, rshr.metal * metalbarlen};
 
 		gleDrawQuadC(TRectangle<float>{x1                 , y1         , x2                 , y2         }, SColor{0.8f, 0.8f, 0.8f, 0.2f}, rb);
 		gleDrawQuadC(TRectangle<float>{x1                 , y1         , x1 + sx[0]         , y2         }, SColor{1.0f, 1.0f, 1.0f, 1.0f}, rb);
@@ -114,7 +115,8 @@ void CResourceBar::Draw()
 		const float x2 = energybarx2;
 		const float y1 = energyy + 0.014f;
 		const float y2 = energyy + 0.020f;
-		const float sx[] = {(rcs.energy != 0.0f)? ((rcr.energy / rcs.energy) * energybarlen): 0.0f, rshr.energy * energybarlen};
+		const float energyRatio = (rcs.energy != 0.0f) ? (std::min(rcr.energy, rcs.energy) / rcs.energy) : 0.0f;
+		const float sx[] = {energyRatio * energybarlen, rshr.energy * energybarlen};
 
 		gleDrawQuadC(TRectangle<float>{x1                 , y1         , x2                 , y2         }, SColor{0.8f, 0.8f, 0.2f, 0.2f}, rb);
 		gleDrawQuadC(TRectangle<float>{x1                 , y1         , x1 + sx[0]         , y2         }, SColor{1.0f, 1.0f, 0.2f, 1.0f}, rb);

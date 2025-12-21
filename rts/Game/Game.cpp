@@ -2169,14 +2169,12 @@ void CGame::ActionReceived(const Action& action, int playerID)
 	const ISyncedActionExecutor* executor = syncedGameCommands->GetActionExecutor(action.command);
 
 	if (executor != nullptr) {
-		// an executor for that action was found
 		executor->ExecuteAction(SyncedAction(action, playerID));
 		return;
 	}
 
 	if (!gs->PreSimFrame()) {
 		eventHandler.SyncedActionFallback(action.rawline, playerID);
-		//FIXME add unsynced one?
 	}
 }
 

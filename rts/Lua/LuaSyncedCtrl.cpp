@@ -47,6 +47,7 @@
 #include "Sim/Misc/TeamHandler.h"
 #include "Sim/Misc/QuadField.h"
 #include "Sim/Misc/Wind.h"
+#include "System/Audit/EconomyAudit.h"
 #include "Sim/MoveTypes/AAirMoveType.h"
 #include "Sim/Path/IPathManager.h"
 #include "System/Misc/SpringTime.h"
@@ -309,6 +310,8 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(SetEconomyController);
 	REGISTER_LUA_CFUNC(SetUnitTransferController);
 	REGISTER_LUA_CFUNC(GetAuditTimer);
+	REGISTER_LUA_CFUNC(EconomyAuditLog);
+	REGISTER_LUA_CFUNC(EconomyAuditBreakpoint);
 
 	REGISTER_LUA_CFUNC(AddTeamResourceStats);
 
@@ -1932,6 +1935,91 @@ int LuaSyncedCtrl::GetAuditTimer(lua_State* L)
 	// with large absolute microsecond values (which can exceed 2^53)
 	static const spring_time startTime = spring_gettime();
 	lua_pushnumber(L, (lua_Number)(spring_gettime() - startTime).toMicroSecsi());
+	return 1;
+}
+
+
+/***
+ * Log an economy audit event with automatic context (source_path, frame).
+ * Accepts flat key-value pairs to avoid Lua-side JSON encoding overhead.
+ * Only logs if economy audit is enabled and a context is active.
+ * 
+ * @function Spring.EconomyAuditLog
+ * @param eventType string the event type (e.g. "team_input", "storage_capped")
+ * @param key1 string first key name
+ * @param val1 number|string|boolean first value
+ * @param ... additional key-value pairs
+ * @return boolean logged true if the event was logged
+ */
+int LuaSyncedCtrl::EconomyAuditLog(lua_State* L)
+{
+	if (!economyAudit.IsEnabled() || !economyAudit.IsActive()) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+	
+	const std::string eventType = luaL_checkstring(L, 1);
+	
+	// Build JSON from flat key-value pairs (avoids Lua table + json.encode overhead)
+	std::string json = "{";
+	const int n = lua_gettop(L);
+	bool first = true;
+	
+	for (int i = 2; i < n; i += 2) {
+		if (!lua_isstring(L, i)) continue; // key must be string
+		
+		const char* key = lua_tostring(L, i);
+		
+		if (!first) json += ",";
+		first = false;
+		
+		json += "\"";
+		json += key;
+		json += "\":";
+		
+		const int valIdx = i + 1;
+		if (lua_isnumber(L, valIdx)) {
+			// Use lua_Number for full precision
+			char buf[64];
+			snprintf(buf, sizeof(buf), "%.8g", lua_tonumber(L, valIdx));
+			json += buf;
+		} else if (lua_isstring(L, valIdx)) {
+			json += "\"";
+			json += lua_tostring(L, valIdx);
+			json += "\"";
+		} else if (lua_isboolean(L, valIdx)) {
+			json += lua_toboolean(L, valIdx) ? "true" : "false";
+		} else {
+			json += "null";
+		}
+	}
+	
+	json += "}";
+	
+	economyAudit.Log(eventType, json);
+	lua_pushboolean(L, true);
+	return 1;
+}
+
+
+/***
+ * Record a timing breakpoint in the economy audit stopwatch.
+ * Only records if economy audit is enabled and a context is active.
+ * 
+ * @function Spring.EconomyAuditBreakpoint
+ * @param name string the breakpoint name (e.g. "Solver", "Transfers")
+ * @return boolean recorded true if the breakpoint was recorded
+ */
+int LuaSyncedCtrl::EconomyAuditBreakpoint(lua_State* L)
+{
+	if (!economyAudit.IsActive()) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+	
+	const std::string name = luaL_checkstring(L, 1);
+	economyAudit.Breakpoint(name);
+	lua_pushboolean(L, true);
 	return 1;
 }
 

@@ -54,35 +54,7 @@
 #include <vector>
 #include <utility>
 
-namespace {
-	struct AuditStopwatch {
-		spring_time startTime;
-		spring_time lastTime;
-		std::vector<std::pair<const char*, long>> breakpoints;
-
-		void Start() {
-			startTime = spring_gettime();
-			lastTime = startTime;
-			breakpoints.clear();
-		}
-
-		void Breakpoint(const char* name) {
-			spring_time now = spring_gettime();
-			breakpoints.emplace_back(name, (now - lastTime).toMicroSecsi());
-			lastTime = now;
-		}
-
-		long Total() const {
-			return (spring_gettime() - startTime).toMicroSecsi();
-		}
-
-		void Log(int frame) const {
-			for (const auto& bp : breakpoints) {
-				LOG_L(L_INFO, "[SolverAudit] frame=%d metric=%s time_us=%ld", frame, bp.first, bp.second);
-			}
-		}
-	};
-}
+#include "System/Audit/EconomyAudit.h"
 #include "System/SpringMath.h"
 #include "System/LoadLock.h"
 
@@ -751,8 +723,7 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 	if (processEconomyRef == LUA_NOREF)
 		return;
 
-	AuditStopwatch stopwatch;
-	stopwatch.Start();
+	economyAudit.Begin("PE", gameFrame);
 
 	LUA_CALL_IN_CHECK(L);
 	lua_checkstack(L, 8);
@@ -762,6 +733,7 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 	if (!lua_isfunction(L, -1)) {
 		lua_pop(L, 1);
 		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Controller ref=%d is NOT a function!", gameFrame, processEconomyRef);
+		economyAudit.End();
 		return;
 	}
 
@@ -795,21 +767,23 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 		teamCount++;
 	}
 
-	stopwatch.Breakpoint("PE_CppMunge");
+	economyAudit.Breakpoint("CppMunge");
 
 	// Call the Lua controller
 	if (lua_pcall(L, 2, 1, 0) != 0) {
 		const char* err = lua_tostring(L, -1);
 		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Lua pcall error: %s", gameFrame, err ? err : "unknown");
 		lua_pop(L, 1);
+		economyAudit.End();
 		return;
 	}
 
-	stopwatch.Breakpoint("PE_LuaTotal");
+	economyAudit.Breakpoint("LuaTotal");
 
 	if (!lua_istable(L, -1)) {
 		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Lua did not return a table!", gameFrame);
 		lua_pop(L, 1);
+		economyAudit.End();
 		return;
 	}
 
@@ -840,10 +814,9 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 	}
 	lua_pop(L, 1);
 
-	stopwatch.Breakpoint("PE_CppSetters");
+	economyAudit.Breakpoint("CppSetters");
 
-	stopwatch.Log(gameFrame);
-	LOG_L(L_INFO, "[SolverAudit] frame=%d metric=PE_Overall time_us=%ld entries=%d", gameFrame, stopwatch.Total(), processedEntries);
+	economyAudit.End();
 }
 
 
@@ -1492,8 +1465,7 @@ bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& exces
 	if (!cmdStr.GetGlobalFunc(L))
 		return false;
 
-	AuditStopwatch stopwatch;
-	stopwatch.Start();
+	economyAudit.Begin("RE", gs->frameNum);
 
 	LuaUtils::re_cpp_setters_us = 0;
 	LuaUtils::is_in_resource_excess = true;
@@ -1509,21 +1481,21 @@ bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& exces
 		lua_rawseti(L, -2, teamID);
 	}
 
-	stopwatch.Breakpoint("RE_CppMunge");
+	economyAudit.Breakpoint("CppMunge");
 
-	if (!RunCallIn(L, cmdStr, 1, 1))
+	if (!RunCallIn(L, cmdStr, 1, 1)) {
+		economyAudit.End();
 		return false;
+	}
 
-	stopwatch.Breakpoint("RE_LuaTotal");
+	economyAudit.Breakpoint("LuaTotal");
 
 	const bool handled = luaL_optboolean(L, -1, false);
 	lua_pop(L, 1);
 
 	LuaUtils::is_in_resource_excess = false;
 
-	stopwatch.Log(gs->frameNum);
-	LOG_L(L_INFO, "[SolverAudit] frame=%d metric=RE_CppSetters time_us=%ld", gs->frameNum, LuaUtils::re_cpp_setters_us);
-	LOG_L(L_INFO, "[SolverAudit] frame=%d metric=RE_Overall time_us=%ld teams=%d", gs->frameNum, stopwatch.Total(), (int)excesses.size());
+	economyAudit.End();
 
 	return handled;
 }

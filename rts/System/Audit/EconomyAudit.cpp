@@ -75,12 +75,12 @@ void EconomyAudit::Log(const std::string& eventType, const std::string& jsonData
 }
 
 void EconomyAudit::LogBreakpoints() {
+	char buf[256];
 	for (const auto& bp : breakpoints) {
-		LOG_SL("SolverAudit", L_INFO, "source_path=%s frame=%d metric=%s time_us=%ld", 
-			sourcePath.c_str(), frame, bp.first.c_str(), bp.second);
+		snprintf(buf, sizeof(buf), "{\"metric\":\"%s\",\"time_us\":%ld}", bp.first.c_str(), bp.second);
+		Log("solver_timing", buf);
 	}
 	
-	long total = TotalMicros();
-	LOG_SL("SolverAudit", L_INFO, "source_path=%s frame=%d metric=%s_Overall time_us=%ld", 
-		sourcePath.c_str(), frame, sourcePath.c_str(), total);
+	snprintf(buf, sizeof(buf), "{\"metric\":\"%s_Overall\",\"time_us\":%ld}", sourcePath.c_str(), TotalMicros());
+	Log("solver_timing", buf);
 }

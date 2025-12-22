@@ -158,12 +158,29 @@ void CTeamHandler::HandleFrameExcess(int frameNum)
 		luaHandled = eventHandler.ResourceExcess(excesses);
 	}
 	
-	if (!luaHandled)
+	// Determine if ProcessEconomy will handle excess on this frame
+	bool processEconomyWillRun = false;
+	if (modInfo.game_economy && isSlowUpdate) {
+		if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_PROCESS_ECONOMY) {
+			processEconomyWillRun = true;
+		} else if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_ALTERNATE) {
+			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
+			processEconomyWillRun = (slowUpdateCycle % 2 == 1);
+		} else if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_OFF) {
+			processEconomyWillRun = true;
+		}
+	}
+
+	if (!luaHandled && !processEconomyWillRun) {
 		for (auto &team : teams)
 			team.resDelayedShare += team.resExcessThisFrame;
+	}
 
-	for (auto &team : teams)
-		team.resExcessThisFrame = 0.0f;
+	// ProcessEconomy will receive excess and zero it after processing
+	if (!processEconomyWillRun) {
+		for (auto &team : teams)
+			team.resExcessThisFrame = 0.0f;
+	}
 }
 
 void CTeamHandler::GameFrame(int frameNum)

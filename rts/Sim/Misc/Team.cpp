@@ -155,9 +155,6 @@ void CTeam::AddMetal(float amount, bool useIncomeMultiplier)
 	res.metal += amount;
 	resIncome.metal += amount;
 
-	if (modInfo.game_economy)
-		return;
-
 	if (res.metal <= resStorage.metal)
 		return;
 
@@ -173,9 +170,6 @@ void CTeam::AddEnergy(float amount, bool useIncomeMultiplier)
 
 	res.energy += amount;
 	resIncome.energy += amount;
-
-	if (modInfo.game_economy)
-		return;
 
 	if (res.energy > resStorage.energy) {
 		resExcessThisFrame.energy += (res.energy - resStorage.energy);
@@ -205,10 +199,7 @@ void CTeam::AddResources(SResourcePack amount, bool useIncomeMultiplier)
 			continue;
 
 		resExcessThisFrame[i] += (res[i] - resStorage[i]);
-		if (!modInfo.game_economy) {
-			resDelayedShare[i] += resExcessThisFrame[i];
-			res[i] = resStorage[i];
-		}
+		res[i] = resStorage[i];
 	}
 }
 

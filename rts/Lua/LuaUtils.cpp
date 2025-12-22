@@ -2017,7 +2017,7 @@ void LuaUtils::TracyRemoveAlsoExtras(char* script)
 #endif
 }
 
-void LuaUtils::PushTeamResource(lua_State* L, const CTeam* team, float current, float storage, float pull, float income, float expense, float share, const char* name)
+void LuaUtils::PushTeamResource(lua_State* L, const CTeam* team, float current, float storage, float pull, float income, float expense, float share, float excess, const char* name)
 {
 	lua_pushstring(L, name);
 	lua_newtable(L);
@@ -2027,6 +2027,7 @@ void LuaUtils::PushTeamResource(lua_State* L, const CTeam* team, float current, 
 	LuaPushNamedNumber(L, "income", income);
 	LuaPushNamedNumber(L, "expense", expense);
 	LuaPushNamedNumber(L, "shareSlider", share);
+	LuaPushNamedNumber(L, "excess", excess);
 	lua_pushstring(L, name);
 	lua_setfield(L, -2, "resourceType");
 	lua_rawset(L, -3);

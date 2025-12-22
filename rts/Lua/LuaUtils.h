@@ -134,7 +134,7 @@ class LuaUtils {
 		static void PushCommandOptionsTable(lua_State* L, const Command& cmd, bool subtable);
 		static int  PushUnitAndCommand(lua_State* L, const CUnit* unit, const Command& cmd);
 
-		static void PushTeamResource(lua_State* L, const CTeam* team, float current, float storage, float pull, float income, float expense, float share, const char* name);
+		static void PushTeamResource(lua_State* L, const CTeam* team, float current, float storage, float pull, float income, float expense, float share, float excess, const char* name);
 		static void ParseEconomyResult(lua_State* L, CTeam* team, float& current, float& sent, float& received, bool isMetal);
 
 		static Command ParseCommand(lua_State* L, const char* caller, int idIndex);

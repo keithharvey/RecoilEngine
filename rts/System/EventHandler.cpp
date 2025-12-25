@@ -12,6 +12,7 @@
 #include "System/Exceptions.h"
 #include "System/Platform/Threading.h"
 #include "System/GlobalConfig.h"
+#include "System/Log/ILog.h"
 
 #include "System/Misc/TracyDefs.h"
 
@@ -65,6 +66,8 @@ void CEventHandler::SetupEvents()
 
 void CEventHandler::AddClient(CEventClient* ec)
 {
+	LOG("[AddClient] Adding client %p synced=%d", (void*)ec, ec->GetSynced() ? 1 : 0);
+
 	ListInsert(handles, ec);
 
 	for (const auto& element: eventMap) {
@@ -82,6 +85,8 @@ void CEventHandler::AddClient(CEventClient* ec)
 
 void CEventHandler::RemoveClient(CEventClient* ec)
 {
+	LOG("[RemoveClient] Removing client %p synced=%d", (void*)ec, ec->GetSynced() ? 1 : 0);
+
 	if (mouseOwner == ec)
 		mouseOwner = nullptr;
 
@@ -151,9 +156,12 @@ bool CEventHandler::InsertEvent(CEventClient* ec, const std::string& ciName)
 	const auto comp = [](const EventPair& a, const EventPair& b) { return (a.first < b.first); };
 	const auto iter = std::lower_bound(eventMap.begin(), eventMap.end(), EventPair{ciName, {}}, comp);
 
-	if ((iter == eventMap.end()) || (iter->second.GetList() == nullptr) || (iter->first != ciName))
+	if (iter == eventMap.end())
 		return false;
-
+	if (iter->second.GetList() == nullptr)
+		return false;
+	if (iter->first != ciName)
+		return false;
 	if (ec->GetSynced() && iter->second.HasPropBit(UNSYNCED_BIT))
 		return false;
 
@@ -580,6 +588,12 @@ void CEventHandler::ProcessEconomy(int gameFrame)
 	ITERATE_EVENTCLIENTLIST(ProcessEconomy, gameFrame);
 }
 
+bool CEventHandler::ResourceExcess(const std::map <int, SResourcePack> &excess)
+{
+	ZoneScoped;
+	return ControlIterateDefFalse(listResourceExcess, &CEventClient::ResourceExcess, excess);
+}
+
 void CEventHandler::GameProgress(int gameFrame)
 {
 	ZoneScoped;
@@ -597,12 +611,6 @@ void CEventHandler::TeamDied(int teamID)
 {
 	ZoneScoped;
 	ITERATE_EVENTCLIENTLIST(TeamDied, teamID);
-}
-
-bool CEventHandler::ResourceExcess(const std::map <int, SResourcePack> &excess)
-{
-	ZoneScoped;
-	return ControlIterateDefFalse(listResourceExcess, &CEventClient::ResourceExcess, excess);
 }
 
 void CEventHandler::TeamChanged(int teamID)

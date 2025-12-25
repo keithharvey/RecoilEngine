@@ -257,6 +257,14 @@ public:
 	};
 	EconomyAuditMode economy_audit_mode;
 
+	// For TeamHandler - checks game_economy and isSlowUpdate
+	bool ShouldRunProcessEconomy(int frameNum) const;
+	bool ShouldRunResourceExcess(int frameNum) const;
+	
+	// For Lua API - just checks mode (original semantics)
+	bool IsProcessEconomyModeActive(int frameNum) const;
+	bool IsResourceExcessModeActive(int frameNum) const;
+
 	// how often to report wind speed/direction to wind gens
 	int windChangeReportPeriod;
 

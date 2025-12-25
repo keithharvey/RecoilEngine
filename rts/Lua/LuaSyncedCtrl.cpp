@@ -52,19 +52,6 @@
 #include "Sim/Path/IPathManager.h"
 #include "System/Misc/SpringTime.h"
 
-namespace {
-	struct ScopedRESetterTimer {
-		spring_time start;
-		bool active;
-		ScopedRESetterTimer() {
-			active = LuaUtils::is_in_resource_excess;
-			if (active) start = spring_gettime();
-		}
-		~ScopedRESetterTimer() {
-			if (active) LuaUtils::re_cpp_setters_us += (spring_gettime() - start).toMicroSecsi();
-		}
-	};
-}
 #include "Sim/Projectiles/ExplosionGenerator.h"
 #include "Sim/Projectiles/Projectile.h"
 #include "Sim/Projectiles/PieceProjectile.h"
@@ -308,9 +295,11 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(SetTeamShareLevel);
 	REGISTER_LUA_CFUNC(ShareTeamResource);
 	REGISTER_LUA_CFUNC(SetEconomyController);
+	REGISTER_LUA_CFUNC(SetResourceExcessController);
 	REGISTER_LUA_CFUNC(SetUnitTransferController);
 	REGISTER_LUA_CFUNC(GetAuditTimer);
 	REGISTER_LUA_CFUNC(EconomyAuditLog);
+	REGISTER_LUA_CFUNC(EconomyAuditLogRaw);
 	REGISTER_LUA_CFUNC(EconomyAuditBreakpoint);
 
 	REGISTER_LUA_CFUNC(AddTeamResourceStats);
@@ -1536,7 +1525,6 @@ int LuaSyncedCtrl::GetTeamResourceData(lua_State* L)
  */
 int LuaSyncedCtrl::SetTeamResourceData(lua_State* L)
 {
-	ScopedRESetterTimer timer;
 	const int teamID = luaL_checkint(L, 1);
 
 	if (!teamHandler.IsValidTeam(teamID))
@@ -1582,7 +1570,6 @@ int LuaSyncedCtrl::SetTeamResourceData(lua_State* L)
  */
 int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 {
-	ScopedRESetterTimer timer;
 	const int teamID = luaL_checkint(L, 1);
 
 	if (modInfo.game_economy) {
@@ -1760,7 +1747,6 @@ int LuaSyncedCtrl::ShareTeamResource(lua_State* L)
  */
 int LuaSyncedCtrl::AddTeamResourceStats(lua_State* L)
 {
-	ScopedRESetterTimer timer;
 	const auto team = ParseTeam(L, __func__, 1);
 	if (team == nullptr)
 		return 0;
@@ -1867,6 +1853,37 @@ int LuaSyncedCtrl::SetEconomyController(lua_State* L)
 }
 
 
+/*** Registers the ResourceExcess controller function.
+ * When registered, the engine will call this function for resource excess processing.
+ * This mirrors the ProcessEconomy pattern: C++ builds data, calls Lua solver, C++ applies results.
+ *
+ * @function Spring.SetResourceExcessController
+ * @param controllerFunc function The controller function(gameFrame, teams) -> results table
+ * @return nil
+ */
+int LuaSyncedCtrl::SetResourceExcessController(lua_State* L)
+{
+	if (!lua_isfunction(L, 1))
+		luaL_error(L, "SetResourceExcessController requires a function");
+
+	CLuaHandle* lh = CLuaHandle::GetHandle(L);
+	CSyncedLuaHandle* slh = dynamic_cast<CSyncedLuaHandle*>(lh);
+	if (slh == nullptr)
+		return 0;
+
+	// Store function reference
+	lua_pushvalue(L, 1);
+	int funcRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	slh->SetResourceExcessController(funcRef);
+
+	// Register the event since there's no global "ResourceExcess" for UpdateCallIn to find
+	eventHandler.InsertEvent(slh, "ResourceExcess");
+
+	return 0;
+}
+
+
 /***
  * @class GameUnitTransferController
  * @x_helper
@@ -1958,15 +1975,15 @@ int LuaSyncedCtrl::EconomyAuditLog(lua_State* L)
 		return 1;
 	}
 	
-	const std::string eventType = luaL_checkstring(L, 1);
+	const char* eventType = luaL_checkstring(L, 1);
 	
-	// Build JSON from flat key-value pairs (avoids Lua table + json.encode overhead)
+	// Build JSON from flat key-value pairs
 	std::string json = "{";
 	const int n = lua_gettop(L);
 	bool first = true;
 	
 	for (int i = 2; i < n; i += 2) {
-		if (!lua_isstring(L, i)) continue; // key must be string
+		if (!lua_isstring(L, i)) continue;
 		
 		const char* key = lua_tostring(L, i);
 		
@@ -1979,7 +1996,6 @@ int LuaSyncedCtrl::EconomyAuditLog(lua_State* L)
 		
 		const int valIdx = i + 1;
 		if (lua_isnumber(L, valIdx)) {
-			// Use lua_Number for full precision
 			char buf[64];
 			snprintf(buf, sizeof(buf), "%.8g", lua_tonumber(L, valIdx));
 			json += buf;
@@ -1993,10 +2009,71 @@ int LuaSyncedCtrl::EconomyAuditLog(lua_State* L)
 			json += "null";
 		}
 	}
-	
 	json += "}";
 	
 	economyAudit.Log(eventType, json);
+
+	lua_pushboolean(L, true);
+	return 1;
+}
+
+
+/***
+ * Log an economy audit event without requiring an active context.
+ * Use for initialization data like team_info that happens before Begin().
+ * 
+ * @function Spring.EconomyAuditLogRaw
+ * @param eventType string the event type (e.g. "team_info")
+ * @param key1 string first key name
+ * @param val1 number|string|boolean first value
+ * @param ... additional key-value pairs
+ * @return boolean logged true if the event was logged
+ */
+int LuaSyncedCtrl::EconomyAuditLogRaw(lua_State* L)
+{
+	if (!economyAudit.IsEnabled()) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+	
+	const char* eventType = luaL_checkstring(L, 1);
+	
+	// Build JSON from flat key-value pairs
+	std::string json = "{";
+	const int n = lua_gettop(L);
+	bool first = true;
+	
+	for (int i = 2; i < n; i += 2) {
+		if (!lua_isstring(L, i)) continue;
+		
+		const char* key = lua_tostring(L, i);
+		
+		if (!first) json += ",";
+		first = false;
+		
+		json += "\"";
+		json += key;
+		json += "\":";
+		
+		const int valIdx = i + 1;
+		if (lua_isnumber(L, valIdx)) {
+			char buf[64];
+			snprintf(buf, sizeof(buf), "%.8g", lua_tonumber(L, valIdx));
+			json += buf;
+		} else if (lua_isstring(L, valIdx)) {
+			json += "\"";
+			json += lua_tostring(L, valIdx);
+			json += "\"";
+		} else if (lua_isboolean(L, valIdx)) {
+			json += lua_toboolean(L, valIdx) ? "true" : "false";
+		} else {
+			json += "null";
+		}
+	}
+	json += "}";
+	
+	economyAudit.LogRaw(eventType, json);
+
 	lua_pushboolean(L, true);
 	return 1;
 }

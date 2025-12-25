@@ -2,6 +2,7 @@
 
 
 #include "ModInfo.h"
+#include "GlobalConstants.h"
 
 #include "Lua/LuaParser.h"
 #include "Lua/LuaSyncedRead.h"
@@ -419,5 +420,91 @@ void CModInfo::Init(const std::string& modFileName)
 	smoothMeshResDivider                     = std::max  (smoothMeshResDivider                    ,    1          );
 	smoothMeshSmoothRadius                   = std::max  (smoothMeshSmoothRadius                  ,    1          );
 	unitQuadPositionUpdateRate               = std::clamp(unitQuadPositionUpdateRate              ,    1    ,   15);
+}
+
+bool CModInfo::ShouldRunProcessEconomy(int frameNum) const
+{
+	if (!game_economy)
+		return false;
+	
+	const bool isSlowUpdate = (frameNum % TEAM_SLOWUPDATE_RATE) == 0;
+	if (!isSlowUpdate)
+		return false;
+	
+	switch (economy_audit_mode) {
+		case ECONOMY_AUDIT_OFF:
+		case ECONOMY_AUDIT_PROCESS_ECONOMY:
+			return true;
+		case ECONOMY_AUDIT_RESOURCE_EXCESS:
+			return false;
+		case ECONOMY_AUDIT_ALTERNATE: {
+			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
+			return (slowUpdateCycle % 2 == 1);
+		}
+		default:
+			return true;
+	}
+}
+
+bool CModInfo::ShouldRunResourceExcess(int frameNum) const
+{
+	const bool isSlowUpdate = (frameNum % TEAM_SLOWUPDATE_RATE) == 0;
+	if (!isSlowUpdate)
+		return false;
+	
+	switch (economy_audit_mode) {
+		case ECONOMY_AUDIT_OFF:
+			// OFF mode: ProcessEconomy runs if game_economy, else ResourceExcess
+			return !game_economy;
+		case ECONOMY_AUDIT_RESOURCE_EXCESS:
+			return true;
+		case ECONOMY_AUDIT_PROCESS_ECONOMY:
+			return false;
+		case ECONOMY_AUDIT_ALTERNATE: {
+			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
+			return (slowUpdateCycle % 2 == 0);
+		}
+		default:
+			return !game_economy;
+	}
+}
+
+bool CModInfo::IsProcessEconomyModeActive(int frameNum) const
+{
+	switch (economy_audit_mode) {
+		case ECONOMY_AUDIT_OFF:
+		case ECONOMY_AUDIT_PROCESS_ECONOMY:
+			return true;
+		case ECONOMY_AUDIT_RESOURCE_EXCESS:
+			return false;
+		case ECONOMY_AUDIT_ALTERNATE: {
+			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
+			return (slowUpdateCycle % 2 == 1);
+		}
+		default:
+			return true;
+	}
+}
+
+bool CModInfo::IsResourceExcessModeActive(int frameNum) const
+{
+	const bool isSlowUpdate = (frameNum % TEAM_SLOWUPDATE_RATE) == 0;
+	
+	switch (economy_audit_mode) {
+		case ECONOMY_AUDIT_OFF:
+			return isSlowUpdate;
+		case ECONOMY_AUDIT_PROCESS_ECONOMY:
+			return false;
+		case ECONOMY_AUDIT_RESOURCE_EXCESS:
+			return isSlowUpdate;
+		case ECONOMY_AUDIT_ALTERNATE: {
+			if (!isSlowUpdate)
+				return false;
+			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
+			return (slowUpdateCycle % 2 == 0);
+		}
+		default:
+			return isSlowUpdate;
+	}
 }
 

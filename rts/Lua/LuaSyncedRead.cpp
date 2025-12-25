@@ -946,24 +946,7 @@ int LuaSyncedRead::GetGameSeconds(lua_State* L)
 int LuaSyncedRead::IsProcessEconomyActive(lua_State* L)
 {
 	const int frameNum = luaL_optint(L, 1, gs->GetLuaSimFrame());
-	
-	switch (modInfo.economy_audit_mode) {
-		case CModInfo::ECONOMY_AUDIT_OFF:
-		case CModInfo::ECONOMY_AUDIT_PROCESS_ECONOMY:
-			lua_pushboolean(L, true);
-			break;
-		case CModInfo::ECONOMY_AUDIT_RESOURCE_EXCESS:
-			lua_pushboolean(L, false);
-			break;
-		case CModInfo::ECONOMY_AUDIT_ALTERNATE: {
-			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
-			lua_pushboolean(L, (slowUpdateCycle % 2 == 1));
-			break;
-		}
-		default:
-			lua_pushboolean(L, true);
-			break;
-	}
+	lua_pushboolean(L, modInfo.IsProcessEconomyModeActive(frameNum));
 	return 1;
 }
 
@@ -980,33 +963,7 @@ int LuaSyncedRead::IsProcessEconomyActive(lua_State* L)
 int LuaSyncedRead::IsResourceExcessActive(lua_State* L)
 {
 	const int frameNum = luaL_optint(L, 1, gs->GetLuaSimFrame());
-	const bool isSlowUpdate = (frameNum % TEAM_SLOWUPDATE_RATE) == 0;
-	
-	switch (modInfo.economy_audit_mode) {
-		case CModInfo::ECONOMY_AUDIT_OFF:
-			// Default mode: ResourceExcess runs on SlowUpdate frames
-			lua_pushboolean(L, isSlowUpdate);
-			break;
-		case CModInfo::ECONOMY_AUDIT_PROCESS_ECONOMY:
-			lua_pushboolean(L, false);
-			break;
-		case CModInfo::ECONOMY_AUDIT_RESOURCE_EXCESS:
-			// ResourceExcess only runs on SlowUpdate for fair comparison
-			lua_pushboolean(L, isSlowUpdate);
-			break;
-		case CModInfo::ECONOMY_AUDIT_ALTERNATE: {
-			if (!isSlowUpdate) {
-				lua_pushboolean(L, false);
-			} else {
-				const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
-				lua_pushboolean(L, (slowUpdateCycle % 2 == 0));
-			}
-			break;
-		}
-		default:
-			lua_pushboolean(L, isSlowUpdate);
-			break;
-	}
+	lua_pushboolean(L, modInfo.IsResourceExcessModeActive(frameNum));
 	return 1;
 }
 

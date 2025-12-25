@@ -115,71 +115,13 @@ void CTeamHandler::SetDefaultStartPositions(const CGameSetup* setup)
 		team.SetDefaultStartPos();
 	}
 }
-
-void CTeamHandler::HandleFrameExcess(int frameNum)
+void CTeamHandler::AccumulateFrameExcess()
 {
-	std::map <int, SResourcePack> excesses;
-	for (const auto &team : teams)
-		excesses.emplace(team.teamNum, team.resExcessThisFrame);
-
-	/* Note that `resDelayedShare` is a metaaccumulator,
-	 * the reason to have this two-layer accumulation is
-	 * that handling excess right when it happens would
-	 * be too expensive (for example you can have tens of
-	 * thousands of windgens each generating a resource
-	 * instance), having the Lua event handled at slow
-	 * update would reduce control, and having the engine
-	 * handle excess natively outside slow update would
-	 * be inconsistent with other native resource handling. */
-	
-	// For audit modes, only handle ResourceExcess on SlowUpdate frames
-	// to match ProcessEconomy timing for fair comparison
-	const bool isSlowUpdate = (frameNum % TEAM_SLOWUPDATE_RATE) == 0;
-	
-	bool skipResourceExcess = false;
-	if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_PROCESS_ECONOMY) {
-		// ProcessEconomy mode: never call ResourceExcess
-		skipResourceExcess = true;
-	} else if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_ALTERNATE) {
-		// Alternate mode: only call ResourceExcess on SlowUpdate frames, on even cycles
-		if (!isSlowUpdate) {
-			skipResourceExcess = true;
-		} else {
-			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
-			skipResourceExcess = (slowUpdateCycle % 2 == 1);
-		}
-	} else if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_RESOURCE_EXCESS) {
-		// ResourceExcess mode: only call on SlowUpdate frames for fair comparison
-		skipResourceExcess = !isSlowUpdate;
-	}
-	
-	bool luaHandled = false;
-	if (!skipResourceExcess) {
-		luaHandled = eventHandler.ResourceExcess(excesses);
-	}
-	
-	// Determine if ProcessEconomy will handle excess on this frame
-	bool processEconomyWillRun = false;
-	if (modInfo.game_economy && isSlowUpdate) {
-		if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_PROCESS_ECONOMY) {
-			processEconomyWillRun = true;
-		} else if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_ALTERNATE) {
-			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
-			processEconomyWillRun = (slowUpdateCycle % 2 == 1);
-		} else if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_OFF) {
-			processEconomyWillRun = true;
-		}
-	}
-
-	if (!luaHandled && !processEconomyWillRun) {
-		for (auto &team : teams)
-			team.resDelayedShare += team.resExcessThisFrame;
-	}
-
-	// ProcessEconomy will receive excess and zero it after processing
-	if (!processEconomyWillRun) {
-		for (auto &team : teams)
-			team.resExcessThisFrame = 0.0f;
+	// Accumulate this frame's excess into the delayed share buffer
+	// Called every frame; the accumulated total is consumed on slow update
+	for (auto &team : teams) {
+		team.resDelayedShare += team.resExcessThisFrame;
+		team.resExcessThisFrame = 0.0f;
 	}
 }
 
@@ -187,10 +129,26 @@ void CTeamHandler::GameFrame(int frameNum)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 
-	HandleFrameExcess(frameNum);
+	// Accumulate excess every frame
+	AccumulateFrameExcess();
 
 	if ((frameNum % TEAM_SLOWUPDATE_RATE) != 0)
 		return;
+
+	// Debug: log every 1200 frames to trace economy mode dispatch
+	if (frameNum % 1200 == 0) {
+		static const char* modeNames[] = {
+			"OFF",           // ECONOMY_AUDIT_OFF
+			"PROCESS_ECONOMY", // ECONOMY_AUDIT_PROCESS_ECONOMY
+			"RESOURCE_EXCESS", // ECONOMY_AUDIT_RESOURCE_EXCESS
+			"ALTERNATE"       // ECONOMY_AUDIT_ALTERNATE
+		};
+		const char* modeName = (modInfo.economy_audit_mode >= 0 && modInfo.economy_audit_mode < 4)
+			? modeNames[modInfo.economy_audit_mode] : "UNKNOWN";
+
+		LOG("[TeamHandler] frame=%d mode=%s game_economy=%s",
+			frameNum, modeName, modInfo.game_economy ? "true" : "false");
+	}
 
 	for (int a = 0; a < ActiveTeams(); ++a) {
 		teams[a].ResetResourceState();
@@ -199,20 +157,20 @@ void CTeamHandler::GameFrame(int frameNum)
 		teams[a].SlowUpdate();
 	}
 
-	if (modInfo.game_economy) {
-		// In RESOURCE_EXCESS audit mode, skip ProcessEconomy
-		// (ResourceExcess handles everything)
-		bool skipProcessEconomy = false;
-		if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_RESOURCE_EXCESS) {
-			skipProcessEconomy = true;
-		} else if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_ALTERNATE) {
-			// Alternate every SlowUpdate: use ProcessEconomy on odd cycles
-			const int slowUpdateCycle = frameNum / TEAM_SLOWUPDATE_RATE;
-			skipProcessEconomy = (slowUpdateCycle % 2 == 0);
-		}
-		
-		if (!skipProcessEconomy) {
-			eventHandler.ProcessEconomy(frameNum);
+	// Economy callins - one path or the other for game_economy mode
+	if (modInfo.ShouldRunProcessEconomy(frameNum)) {
+		// ProcessEconomy: reads resDelayedShare via Lua API, zeros it after
+		eventHandler.ProcessEconomy(frameNum);
+	} else if (modInfo.ShouldRunResourceExcess(frameNum)) {
+		// ResourceExcess: always called for continuous monitoring, receives accumulated excess as parameter
+		std::map<int, SResourcePack> excesses;
+		for (const auto &team : teams)
+			excesses.emplace(team.teamNum, team.resDelayedShare);
+
+		if (eventHandler.ResourceExcess(excesses)) {
+			// Lua handled it - clear the accumulator
+			for (auto &team : teams)
+				team.resDelayedShare = 0.0f;
 		}
 	}
 }

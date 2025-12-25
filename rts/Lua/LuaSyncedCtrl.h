@@ -57,10 +57,12 @@ class LuaSyncedCtrl
 		static int SetTeamShareLevel(lua_State* L);
 		static int ShareTeamResource(lua_State* L);
 		static int SetEconomyController(lua_State* L);
+		static int SetResourceExcessController(lua_State* L);
 		static int SetUnitTransferController(lua_State* L);
 		static int GetAuditTimer(lua_State* L);
 
 		static int EconomyAuditLog(lua_State* L);
+		static int EconomyAuditLogRaw(lua_State* L);
 		static int EconomyAuditBreakpoint(lua_State* L);
 
 		static int AddTeamResourceStats(lua_State* L);

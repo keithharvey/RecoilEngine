@@ -45,8 +45,6 @@ namespace Json{
 
 class LuaUtils {
 	public:
-		static long re_cpp_setters_us;
-		static bool is_in_resource_excess;
 		struct ScopedStackChecker {
 		public:
 			ScopedStackChecker(lua_State* L, int returnVars = 0);

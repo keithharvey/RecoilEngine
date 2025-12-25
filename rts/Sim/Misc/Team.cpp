@@ -344,10 +344,8 @@ void CTeam::SlowUpdate()
 		currentStats.metalUsed  += resPrevExpense.metal;
 		currentStats.energyUsed += resPrevExpense.energy;
 
-		res.metal  += resDelayedShare.metal;  resDelayedShare.metal  = 0.0f;
-		res.energy += resDelayedShare.energy; resDelayedShare.energy = 0.0f;
-
-		// eventHandler.ProcessEconomy(gs->frameNum); // Moved to CTeamHandler::GameFrame
+		// resDelayedShare is handled by ProcessEconomy or ResourceExcess callins
+		// They read it and zero it after processing
 	} else {
 		float eShare = 0.0f;
 		float mShare = 0.0f;

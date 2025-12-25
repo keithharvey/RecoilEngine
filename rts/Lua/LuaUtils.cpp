@@ -40,9 +40,6 @@ static const int maxDepth = 16;
 
 Json::Value LuaUtils::LuaStackDumper::root  = {};
 
-long LuaUtils::re_cpp_setters_us = 0;
-bool LuaUtils::is_in_resource_excess = false;
-
 /******************************************************************************/
 /******************************************************************************/
 

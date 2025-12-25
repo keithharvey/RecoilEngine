@@ -1,15 +1,12 @@
 /* This file is part of the Recoil engine (GPL v2 or later). */
 
 #include "EconomyAudit.h"
+#include "System/FileSystem/DataDirLocater.h"
 #include "System/Log/ILog.h"
+#include <cstdio>
 
 #define LOG_SECTION_ECONOMY_AUDIT "EconomyAudit"
 LOG_REGISTER_SECTION_GLOBAL(LOG_SECTION_ECONOMY_AUDIT)
-
-#ifdef LOG_SECTION_CURRENT
-	#undef LOG_SECTION_CURRENT
-#endif
-#define LOG_SECTION_CURRENT LOG_SECTION_ECONOMY_AUDIT
 
 EconomyAudit& EconomyAudit::GetInstance() {
 	static EconomyAudit instance;
@@ -18,13 +15,37 @@ EconomyAudit& EconomyAudit::GetInstance() {
 
 EconomyAudit& economyAudit = EconomyAudit::GetInstance();
 
-bool EconomyAudit::IsEnabled() const {
-	// Check if EconomyAudit section would actually log at INFO level
-	// This respects LogSections config - if not set, defaults to NOTICE (35) which blocks INFO (30)
-	return log_frontend_isEnabled(LOG_LEVEL_INFO, LOG_SECTION_ECONOMY_AUDIT);
+void EconomyAudit::Init() {
+	// Check if economy audit section is enabled in springsettings
+	enabled = log_frontend_isEnabled(LOG_LEVEL_INFO, LOG_SECTION_ECONOMY_AUDIT);
+	
+	if (!enabled) {
+		LOG("[EconomyAudit] Disabled (set LogSections = EconomyAudit:30 to enable)");
+		return;
+	}
+
+	// Open dedicated log file in writeable data directory
+	logFilePath = dataDirLocater.GetWriteDirPath() + "economy_audit.txt";
+	logFile.open(logFilePath, std::ios::out | std::ios::trunc);
+	
+	if (!logFile.is_open()) {
+		LOG_L(L_ERROR, "[EconomyAudit] Failed to open %s", logFilePath.c_str());
+		enabled = false;
+		return;
+	}
+	
+	LOG("[EconomyAudit] Logging to %s", logFilePath.c_str());
+}
+
+void EconomyAudit::Shutdown() {
+	if (logFile.is_open()) {
+		logFile.close();
+	}
+	enabled = false;
 }
 
 void EconomyAudit::Begin(const std::string& path, int f) {
+	if (!enabled) return;
 	sourcePath = path;
 	frame = f;
 	active = true;
@@ -34,20 +55,24 @@ void EconomyAudit::Begin(const std::string& path, int f) {
 }
 
 void EconomyAudit::End() {
-	if (IsEnabled() && active) {
-		LogBreakpoints();
-	}
+	if (!enabled || !active) return;
+	LogBreakpoints();
 	active = false;
 	sourcePath.clear();
 	breakpoints.clear();
 }
 
 void EconomyAudit::Breakpoint(const std::string& name) {
-	if (!IsEnabled() || !active) return;
+	if (!enabled || !active) return;
 	
 	spring_time now = spring_gettime();
 	breakpoints.emplace_back(name, (now - lastTime).toMicroSecsi());
 	lastTime = now;
+}
+
+void EconomyAudit::LogTiming(const std::string& name, long microseconds) {
+	if (!enabled || !active) return;
+	breakpoints.emplace_back(name, microseconds);
 }
 
 long EconomyAudit::TotalMicros() const {
@@ -55,23 +80,32 @@ long EconomyAudit::TotalMicros() const {
 }
 
 void EconomyAudit::Log(const std::string& eventType, const std::string& jsonData) {
-	if (!IsEnabled() || !active) return;
+	if (!enabled || !logFile.is_open()) return;
 	
-	// Insert source_path, frame, and game_time into the JSON data
-	// Assumes jsonData starts with '{' and we inject after it
-	char contextBuf[128];
-	snprintf(contextBuf, sizeof(contextBuf), 
-		"{\"source_path\":\"%s\",\"frame\":%d,\"game_time\":%.8g,", 
-		sourcePath.c_str(), frame, frame / 30.0);
-	
-	std::string enrichedJson;
+	// Build enriched JSON with context prefix
+	std::string enriched;
 	if (!jsonData.empty() && jsonData[0] == '{') {
-		enrichedJson = std::string(contextBuf) + jsonData.substr(1);
+		// Insert context after opening brace
+		char contextBuf[128];
+		snprintf(contextBuf, sizeof(contextBuf), 
+			"{\"source_path\":\"%s\",\"frame\":%d,\"game_time\":%.2f,",
+			active ? sourcePath.c_str() : "", frame, frame / 30.0);
+		enriched = std::string(contextBuf) + jsonData.substr(1);
 	} else {
-		enrichedJson = std::string(contextBuf) + jsonData + "}";
+		enriched = jsonData;
 	}
 	
-	LOG_L(L_INFO, "%s %s", eventType.c_str(), enrichedJson.c_str());
+	// Write to dedicated file as NDJSON
+	logFile << eventType << " " << enriched << "\n";
+	logFile.flush();
+}
+
+void EconomyAudit::LogRaw(const std::string& eventType, const std::string& jsonData) {
+	if (!enabled || !logFile.is_open()) return;
+	
+	// Write directly without context enrichment
+	logFile << eventType << " " << jsonData << "\n";
+	logFile.flush();
 }
 
 void EconomyAudit::LogBreakpoints() {

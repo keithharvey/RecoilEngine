@@ -56,6 +56,10 @@ class CSyncedLuaHandle : public CLuaHandle
 	friend class CSplitLuaHandle;
 
 	public: // call-ins
+		// Override WantsEvent and HasCallIn to include manually registered controllers
+		bool WantsEvent(const std::string& name) override;
+		bool HasCallIn(lua_State* L, const std::string& name) const override;
+
 		bool CommandFallback(const CUnit* unit, const Command& cmd) override;
 		bool AllowCommand(const CUnit* unit, const Command& cmd, int playerNum, bool fromSynced, bool fromLua) override;
 		void ProcessEconomy(int gameFrame) override;
@@ -135,6 +139,13 @@ class CSyncedLuaHandle : public CLuaHandle
 		int GetProcessEconomyRef() const { return processEconomyRef; }
 		int GetEconomyFunctionRef(const char* name) const;
 
+		// Resource Excess Controller (mirrors ProcessEconomy pattern)
+		void SetResourceExcessController(int ref);
+		int GetResourceExcessRef() const { return resourceExcessRef; }
+
+		// Clear all controller refs (called before Lua state swap)
+		void ClearControllerRefs();
+
 		// Unit Transfer Controller
 		void SetUnitTransferController(int tableRef, int allowUnitTransferRef, int teamShareRef);
 		int GetUnitTransferControllerTable() const { return unitTransferControllerTableRef; }
@@ -160,6 +171,9 @@ class CSyncedLuaHandle : public CLuaHandle
 		// Economy controller refs
 		int economyControllerTableRef = LUA_NOREF;
 		int processEconomyRef = LUA_NOREF;
+
+		// Resource Excess controller ref (mirrors ProcessEconomy pattern)
+		int resourceExcessRef = LUA_NOREF;
 
 		// Unit transfer controller refs
 		int unitTransferControllerTableRef = LUA_NOREF;

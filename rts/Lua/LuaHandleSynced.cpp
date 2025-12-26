@@ -530,11 +530,7 @@ bool CSyncedLuaHandle::Init(std::string code, const std::string& file)
 	watchProjectileDefs.resize(weaponDefHandler->NumWeaponDefs() + 1, false); // last bit controls piece-projectiles
 	watchAllowTargetDefs.resize(weaponDefHandler->NumWeaponDefs(), false);
 
-	if (modInfo.game_economy) {
-		LOG_L(L_WARNING, "[CSyncedLuaHandle::Init] game_economy is ENABLED");
-	} else {
-		LOG_L(L_WARNING, "[CSyncedLuaHandle::Init] game_economy is DISABLED");
-	}
+	LOG("[CSyncedLuaHandle::Init] game_economy=%s", modInfo.game_economy ? "true" : "false");
 
 	// load the standard libraries
 	SPRING_LUA_OPEN_LIB(L, luaopen_base);

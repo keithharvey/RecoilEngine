@@ -1772,9 +1772,10 @@ int LuaSyncedCtrl::AddTeamResourceStats(lua_State* L)
 			default: continue;
 		}
 
+		const int valueTableIdx = luaS_absIndex(L, LUA_TABLE_VALUE_INDEX);
 		for (int i = 0; i < entries.size(); ++i) {
 			// Parse by resource index, like `produced = { 1.23, 45.6 }`
-			lua_rawgeti(L, LUA_TABLE_VALUE_INDEX, i+1);
+			lua_rawgeti(L, valueTableIdx, i+1);
 			if (lua_isnumber(L, -1))
 				stats.*entries.at(i) += lua_tonumber(L, -1);
 			lua_pop(L, 1);
@@ -1793,7 +1794,7 @@ int LuaSyncedCtrl::AddTeamResourceStats(lua_State* L)
 			std::ranges::transform(resourceName, resourceName.begin(), [](unsigned char c){ return std::tolower(c); });
 
 			lua_pushsstring(L, resourceName);
-			lua_rawget(L, LUA_TABLE_VALUE_INDEX);
+			lua_rawget(L, valueTableIdx);
 			if (lua_isnumber(L, -1))
 				stats.*entries.at(i) += lua_tonumber(L, -1);
 			lua_pop(L, 1);
@@ -1871,13 +1872,10 @@ int LuaSyncedCtrl::SetResourceExcessController(lua_State* L)
 	if (slh == nullptr)
 		return 0;
 
-	// Store function reference
 	lua_pushvalue(L, 1);
 	int funcRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
 	slh->SetResourceExcessController(funcRef);
-
-	// Register the event since there's no global "ResourceExcess" for UpdateCallIn to find
 	eventHandler.InsertEvent(slh, "ResourceExcess");
 
 	return 0;

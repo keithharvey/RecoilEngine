@@ -24,9 +24,14 @@ void EconomyAudit::Init() {
 		return;
 	}
 
-	// Open dedicated log file in writeable data directory
+	// Close existing file handle if already open (Init can be called multiple times)
+	if (logFile.is_open()) {
+		logFile.close();
+	}
+
+	// Open dedicated log file in writeable data directory (append to preserve history)
 	logFilePath = dataDirLocater.GetWriteDirPath() + "economy_audit.txt";
-	logFile.open(logFilePath, std::ios::out | std::ios::trunc);
+	logFile.open(logFilePath, std::ios::out | std::ios::app);
 	
 	if (!logFile.is_open()) {
 		LOG_L(L_ERROR, "[EconomyAudit] Failed to open %s", logFilePath.c_str());

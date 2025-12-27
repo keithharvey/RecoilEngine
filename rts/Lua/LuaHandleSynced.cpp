@@ -814,6 +814,7 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 	}
 
 	economyAudit.Breakpoint("CppMunge");
+	economyAudit.SaveCheckpoint(); // Save time before entering Lua
 
 	// Call the Lua controller
 	if (lua_pcall(L, 2, 1, 0) != 0) {
@@ -824,7 +825,7 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 		return;
 	}
 
-	economyAudit.Breakpoint("LuaTotal");
+	economyAudit.BreakpointAbsolute("LuaTotal"); // Measures from checkpoint (all Lua time)
 
 	if (!lua_istable(L, -1)) {
 		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Lua did not return a table!", gameFrame);
@@ -940,6 +941,7 @@ bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& exces
 	}
 
 	economyAudit.Breakpoint("CppMunge");
+	economyAudit.SaveCheckpoint(); // Save time before entering Lua
 
 	// Call the Lua controller - Lua does ALL the work including API queries
 	if (lua_pcall(L, 2, 1, 0) != 0) {
@@ -950,7 +952,7 @@ bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& exces
 		return false;
 	}
 
-	economyAudit.Breakpoint("LuaTotal");
+	economyAudit.BreakpointAbsolute("LuaTotal"); // Measures from checkpoint (all Lua time)
 
 	const bool handled = luaL_optboolean(L, -1, false);
 	lua_pop(L, 1);

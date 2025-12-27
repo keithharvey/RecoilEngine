@@ -75,6 +75,19 @@ void EconomyAudit::Breakpoint(const std::string& name) {
 	lastTime = now;
 }
 
+void EconomyAudit::SaveCheckpoint() {
+	if (!enabled || !active) return;
+	checkpointTime = spring_gettime();
+}
+
+void EconomyAudit::BreakpointAbsolute(const std::string& name) {
+	if (!enabled || !active) return;
+	
+	spring_time now = spring_gettime();
+	breakpoints.emplace_back(name, (now - checkpointTime).toMicroSecsi());
+	lastTime = now;
+}
+
 void EconomyAudit::LogTiming(const std::string& name, long microseconds) {
 	if (!enabled || !active) return;
 	breakpoints.emplace_back(name, microseconds);

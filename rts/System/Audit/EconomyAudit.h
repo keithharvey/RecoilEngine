@@ -36,6 +36,8 @@ public:
 
 	// Stopwatch functionality
 	void Breakpoint(const std::string& name);
+	void BreakpointAbsolute(const std::string& name); // Always measures from last C++ checkpoint
+	void SaveCheckpoint(); // Save current time for later absolute measurement
 	void LogTiming(const std::string& name, long microseconds);
 	long TotalMicros() const;
 
@@ -63,6 +65,7 @@ private:
 
 	spring_time startTime;
 	spring_time lastTime;
+	spring_time checkpointTime; // Saved by C++ before entering Lua
 	std::vector<std::pair<std::string, long>> breakpoints;
 
 	std::ofstream logFile;

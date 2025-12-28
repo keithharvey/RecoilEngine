@@ -2,6 +2,7 @@
 # This list was created using this *nix shell command:
 # > find . -name "*.cpp"" | sort
 add_library(engineSim STATIC
+		"${CMAKE_CURRENT_SOURCE_DIR}/Economy/WaterfillSolver.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/Ecs/Helper.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/Ecs/Registry.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/Ecs/SaveLoadUtils.cpp"

@@ -9,6 +9,7 @@
 #include "LuaConstGL.h"
 #include "LuaConstCMD.h"
 #include "LuaConstCMDTYPE.h"
+#include "LuaConstPolicyType.h"
 #include "LuaConstEngine.h"
 #include "LuaConstGame.h"
 #include "LuaConstPlatform.h"
@@ -121,6 +122,7 @@ CLuaIntro::CLuaIntro()
 	    !AddEntriesToTable(L, "Game",        LuaConstGame::PushEntries)         ||
 	    !AddEntriesToTable(L, "CMD",         LuaConstCMD::PushEntries)          ||
 	    !AddEntriesToTable(L, "CMDTYPE",     LuaConstCMDTYPE::PushEntries)      ||
+	    !AddEntriesToTable(L, "PolicyType", LuaConstPolicyType::PushEntries)    ||
 	    !AddEntriesToTable(L, "LOG",         LuaUtils::PushLogEntries)
 	) {
 		KillLua();

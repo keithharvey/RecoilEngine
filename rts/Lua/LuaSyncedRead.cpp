@@ -11,6 +11,7 @@
 #include "LuaPathFinder.h"
 #include "LuaRules.h"
 #include "LuaRulesParams.h"
+#include "LuaPolicyCache.h"
 #include "LuaUtils.h"
 #include "ExternalAI/SkirmishAIHandler.h"
 #include "Game/Game.h"
@@ -127,6 +128,8 @@ bool LuaSyncedRead::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(IsEconomyAuditEnabled);
 	REGISTER_LUA_CFUNC(IsEconomyAuditActive);
 	REGISTER_LUA_CFUNC(GetEconomyAuditContext);
+
+	REGISTER_LUA_CFUNC(GetCachedPolicy);
 
 	REGISTER_LUA_CFUNC(GetGameRulesParam);
 	REGISTER_LUA_CFUNC(GetGameRulesParams);
@@ -9259,3 +9262,28 @@ int LuaSyncedRead::GetRadarErrorParams(lua_State* L)
 
 /******************************************************************************/
 /******************************************************************************/
+
+
+/***
+ * @function Spring.GetCachedPolicy
+ *
+ * Retrieve a cached policy from the engine cache.
+ *
+ * @param policyType integer PolicyType enum value (e.g., PolicyType.MetalTransfer)
+ * @param senderTeamId integer
+ * @param receiverTeamId integer
+ * @return table|nil The cached policy data, or nil if not found
+ */
+int LuaSyncedRead::GetCachedPolicy(lua_State* L)
+{
+	const int policyType = luaL_checkint(L, 1);
+	const int senderTeamId = luaL_checkint(L, 2);
+	const int receiverTeamId = luaL_checkint(L, 3);
+
+	if (LuaPolicyCache::policyCache.Get(policyType, senderTeamId, receiverTeamId, L)) {
+		return 1;
+	}
+
+	lua_pushnil(L);
+	return 1;
+}

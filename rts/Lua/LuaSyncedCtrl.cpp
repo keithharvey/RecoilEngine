@@ -8,6 +8,7 @@
 
 #include "LuaInclude.h"
 #include "LuaConfig.h"
+#include "LuaPolicyCache.h"
 #include "LuaRules.h" // for MAX_LUA_COB_ARGS
 #include "LuaHandleSynced.h"
 #include "LuaHashString.h"
@@ -303,6 +304,9 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(EconomyAuditLogRaw);
 	REGISTER_LUA_CFUNC(EconomyAuditBreakpoint);
 	REGISTER_LUA_CFUNC(SolveWaterfill);
+
+	REGISTER_LUA_CFUNC(SetCachedPolicy);
+	REGISTER_LUA_CFUNC(InvalidatePolicyCache);
 
 	REGISTER_LUA_CFUNC(AddTeamResourceStats);
 
@@ -8742,5 +8746,47 @@ int LuaSyncedCtrl::RemoveUnitCmdDesc(lua_State* L)
 		cmdDescIdx = lua_toint(L, 2) - 1;
 
 	unit->commandAI->RemoveCommandDescription(cmdDescIdx);
+	return 0;
+}
+
+
+/***
+ * @function Spring.SetCachedPolicy
+ *
+ * Store a policy in the engine cache, accessible from both synced and unsynced code.
+ *
+ * @param policyType integer PolicyType enum value (e.g., PolicyType.MetalTransfer)
+ * @param senderTeamId integer
+ * @param receiverTeamId integer
+ * @param policyTable table The policy data to cache
+ */
+int LuaSyncedCtrl::SetCachedPolicy(lua_State* L)
+{
+	const int policyType = luaL_checkint(L, 1);
+	const int senderTeamId = luaL_checkint(L, 2);
+	const int receiverTeamId = luaL_checkint(L, 3);
+	luaL_checktype(L, 4, LUA_TTABLE);
+
+	LuaPolicyCache::policyCache.Set(policyType, senderTeamId, receiverTeamId, L, 4);
+	return 0;
+}
+
+
+/***
+ * @function Spring.InvalidatePolicyCache
+ *
+ * Invalidate cached policies. Can invalidate all, by type, or by sender.
+ *
+ * @param policyType integer? If nil, invalidates all types
+ * @param senderTeamId integer? If nil, invalidates all senders for the type
+ * @param receiverTeamId integer? If nil, invalidates all receivers for the sender
+ */
+int LuaSyncedCtrl::InvalidatePolicyCache(lua_State* L)
+{
+	const int policyType = luaL_optint(L, 1, -1);
+	const int senderTeamId = luaL_optint(L, 2, -1);
+	const int receiverTeamId = luaL_optint(L, 3, -1);
+
+	LuaPolicyCache::policyCache.Invalidate(policyType, senderTeamId, receiverTeamId);
 	return 0;
 }

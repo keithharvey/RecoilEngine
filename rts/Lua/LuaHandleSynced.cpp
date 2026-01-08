@@ -766,6 +766,8 @@ bool CSyncedLuaHandle::TeamShare(int teamID, int targetTeamID)
  */
 void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 {
+	ZoneScopedN("ProcessEconomy");
+
 	if (!IsValid())
 		return;
 
@@ -789,35 +791,40 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 	// Push gameFrame
 	lua_pushnumber(L, gameFrame);
 
-	// Create and push teams table
-	lua_newtable(L);
 	int teamCount = 0;
-	for (int teamID = 0; teamID < teamHandler.ActiveTeams(); ++teamID) {
-		CTeam* team = teamHandler.Team(teamID);
-		if (team == nullptr || team->isDead)
-			continue;
+	{
+		ZoneScopedN("PE_CppMunge");
 
-		lua_pushnumber(L, teamID);
+		// Create and push teams table
 		lua_newtable(L);
+		for (int teamID = 0; teamID < teamHandler.ActiveTeams(); ++teamID) {
+			CTeam* team = teamHandler.Team(teamID);
+			if (team == nullptr || team->isDead)
+				continue;
 
-		// Team metadata
-		lua_pushliteral(L, "allyTeam");
-		lua_pushnumber(L, team->teamAllyteam);
-		lua_rawset(L, -3);
+			lua_pushnumber(L, teamID);
+			lua_newtable(L);
 
-		lua_pushliteral(L, "isDead");
-		lua_pushboolean(L, team->isDead);
-		lua_rawset(L, -3);
+			// Team metadata
+			lua_pushliteral(L, "allyTeam");
+			lua_pushnumber(L, team->teamAllyteam);
+			lua_rawset(L, -3);
 
-		LuaUtils::PushTeamResource(L, team, team->res.metal, team->resStorage.metal, team->resPull.metal, team->resIncome.metal, team->resExpense.metal, team->resShare.metal, team->resDelayedShare.metal, "metal");
-		LuaUtils::PushTeamResource(L, team, team->res.energy, team->resStorage.energy, team->resPull.energy, team->resIncome.energy, team->resExpense.energy, team->resShare.energy, team->resDelayedShare.energy, "energy");
+			lua_pushliteral(L, "isDead");
+			lua_pushboolean(L, team->isDead);
+			lua_rawset(L, -3);
 
-		lua_rawset(L, -3);
-		teamCount++;
+			LuaUtils::PushTeamResource(L, team, team->res.metal, team->resStorage.metal, team->resPull.metal, team->resIncome.metal, team->resExpense.metal, team->resShare.metal, team->resDelayedShare.metal, "metal");
+			LuaUtils::PushTeamResource(L, team, team->res.energy, team->resStorage.energy, team->resPull.energy, team->resIncome.energy, team->resExpense.energy, team->resShare.energy, team->resDelayedShare.energy, "energy");
+
+			lua_rawset(L, -3);
+			teamCount++;
+		}
 	}
 
 	economyAudit.Breakpoint("CppMunge");
 	economyAudit.SaveCheckpoint(); // Save time before entering Lua
+	TracyPlot("Economy/TeamCount", static_cast<int64_t>(teamCount));
 
 	// Call the Lua controller
 	if (lua_pcall(L, 2, 1, 0) != 0) {
@@ -837,32 +844,36 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 		return;
 	}
 
-	// Process returned table - apply changes to teams
-	int processedEntries = 0;
-	for (lua_pushnil(L); lua_next(L, -2) != 0; lua_pop(L, 1)) {
-		if (!lua_istable(L, -1))
-			continue;
+	{
+		ZoneScopedN("PE_CppSetters");
 
-		lua_getfield(L, -1, "teamId");
-		const int teamID = (int)luaL_optnumber(L, -1, -1);
-		lua_pop(L, 1);
+		// Process returned table - apply changes to teams
+		int processedEntries = 0;
+		for (lua_pushnil(L); lua_next(L, -2) != 0; lua_pop(L, 1)) {
+			if (!lua_istable(L, -1))
+				continue;
 
-		CTeam* team = teamHandler.Team(teamID);
-		if (team == nullptr)
-			continue;
+			lua_getfield(L, -1, "teamId");
+			const int teamID = (int)luaL_optnumber(L, -1, -1);
+			lua_pop(L, 1);
 
-		lua_getfield(L, -1, "resourceType");
-		const std::string resType = luaL_optstring(L, -1, "");
-		lua_pop(L, 1);
+			CTeam* team = teamHandler.Team(teamID);
+			if (team == nullptr)
+				continue;
 
-		if (resType == "metal") {
-			LuaUtils::ParseEconomyResult(L, team, team->res.metal, team->resSent.metal, team->resReceived.metal, true);
-		} else if (resType == "energy") {
-			LuaUtils::ParseEconomyResult(L, team, team->res.energy, team->resSent.energy, team->resReceived.energy, false);
+			lua_getfield(L, -1, "resourceType");
+			const std::string resType = luaL_optstring(L, -1, "");
+			lua_pop(L, 1);
+
+			if (resType == "metal") {
+				LuaUtils::ParseEconomyResult(L, team, team->res.metal, team->resSent.metal, team->resReceived.metal, true);
+			} else if (resType == "energy") {
+				LuaUtils::ParseEconomyResult(L, team, team->res.energy, team->resSent.energy, team->resReceived.energy, false);
+			}
+			processedEntries++;
 		}
-		processedEntries++;
+		lua_pop(L, 1);
 	}
-	lua_pop(L, 1);
 
 	economyAudit.Breakpoint("CppSetters");
 
@@ -900,7 +911,7 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
  */
 bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& excesses)
 {
-	RECOIL_DETAILED_TRACY_ZONE;
+	ZoneScopedN("ResourceExcess");
 
 	if (!IsValid())
 		return false;
@@ -925,22 +936,26 @@ bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& exces
 	// Push gameFrame
 	lua_pushnumber(L, gs->frameNum);
 
-	// Push excesses table only - Lua must query Spring API for team data
-	// This emulates the per-gadget callin pattern where each gadget does its own lookups
-	lua_newtable(L);
-	for (const auto& [teamID, excess] : excesses) {
-		lua_pushnumber(L, teamID);
+	{
+		ZoneScopedN("RE_CppMunge");
+
+		// Push excesses table only - Lua must query Spring API for team data
+		// This emulates the per-gadget callin pattern where each gadget does its own lookups
 		lua_newtable(L);
-		
-		lua_pushliteral(L, "metal");
-		lua_pushnumber(L, excess.metal);
-		lua_rawset(L, -3);
-		
-		lua_pushliteral(L, "energy");
-		lua_pushnumber(L, excess.energy);
-		lua_rawset(L, -3);
-		
-		lua_rawset(L, -3);
+		for (const auto& [teamID, excess] : excesses) {
+			lua_pushnumber(L, teamID);
+			lua_newtable(L);
+			
+			lua_pushliteral(L, "metal");
+			lua_pushnumber(L, excess.metal);
+			lua_rawset(L, -3);
+			
+			lua_pushliteral(L, "energy");
+			lua_pushnumber(L, excess.energy);
+			lua_rawset(L, -3);
+			
+			lua_rawset(L, -3);
+		}
 	}
 
 	economyAudit.Breakpoint("CppMunge");

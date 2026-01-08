@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "System/Misc/TracyDefs.h"
+
 namespace Economy {
 
 float WaterfillSolver::EffectiveSupply(
@@ -51,6 +53,8 @@ WaterfillResult WaterfillSolver::Solve(
     const std::vector<WaterfillMember>& members,
     float taxRate
 ) const {
+    ZoneScopedN("WaterfillSolve");
+
     WaterfillResult result;
     result.deltas.resize(members.size());
 
@@ -68,16 +72,20 @@ WaterfillResult WaterfillSolver::Solve(
     float lo = 0.0f;
     float hi = maxLift;
 
-    for (int i = 0; i < LIFT_ITERATIONS; ++i) {
-        float mid = 0.5f * (lo + hi);
-        if (Balance(members, mid, taxRate) >= 0.0f) {
-            lo = mid;
-        } else {
-            hi = mid;
+    {
+        ZoneScopedN("WaterfillBinarySearch");
+        for (int i = 0; i < LIFT_ITERATIONS; ++i) {
+            float mid = 0.5f * (lo + hi);
+            if (Balance(members, mid, taxRate) >= 0.0f) {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
         }
     }
 
     result.lift = lo;
+    TracyPlot("Economy/Lift", static_cast<double>(result.lift));
 
     for (size_t i = 0; i < members.size(); ++i) {
         const auto& m = members[i];

@@ -3,6 +3,7 @@
 #include "EconomyAudit.h"
 #include "System/FileSystem/DataDirLocater.h"
 #include "System/Log/ILog.h"
+#include "System/Misc/TracyDefs.h"
 #include <cstdio>
 
 #define LOG_SECTION_ECONOMY_AUDIT "EconomyAudit"
@@ -73,6 +74,8 @@ void EconomyAudit::Breakpoint(const std::string& name) {
 	spring_time now = spring_gettime();
 	breakpoints.emplace_back(name, (now - lastTime).toMicroSecsi());
 	lastTime = now;
+	
+	TracyMessageL(name.c_str());
 }
 
 void EconomyAudit::SaveCheckpoint() {
@@ -86,6 +89,8 @@ void EconomyAudit::BreakpointAbsolute(const std::string& name) {
 	spring_time now = spring_gettime();
 	breakpoints.emplace_back(name, (now - checkpointTime).toMicroSecsi());
 	lastTime = now;
+	
+	TracyMessageL(name.c_str());
 }
 
 void EconomyAudit::LogTiming(const std::string& name, long microseconds) {

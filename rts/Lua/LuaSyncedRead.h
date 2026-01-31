@@ -310,8 +310,6 @@ class LuaSyncedRead {
 		static int TraceRayFeatures(lua_State* L);   //TODO: not implemented
 		static int TraceRayGroundBetweenPositions(lua_State* L);
 		static int TraceRayGroundInDirection(lua_State* L);
-
-		static int GetCachedPolicy(lua_State* L);
 };
 
 #endif /* LUA_SYNCED_READ_H */

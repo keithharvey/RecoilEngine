@@ -282,9 +282,6 @@ class LuaSyncedCtrl
 		static int SetRadarErrorParams(lua_State* L);
 
 	static int SolveWaterfill(lua_State* L);
-
-		static int SetCachedPolicy(lua_State* L);
-		static int InvalidatePolicyCache(lua_State* L);
 };
 
 

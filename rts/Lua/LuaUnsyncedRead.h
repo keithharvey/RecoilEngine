@@ -230,8 +230,6 @@ class LuaUnsyncedRead {
 		static int GetSyncedGCInfo(lua_State* L);
 
 		static int SolveNURBSCurve(lua_State* L);
-
-		static int GetCachedPolicy(lua_State* L);
 };
 
 

@@ -15,7 +15,6 @@
 #include "LuaConstEngine.h"
 #include "LuaConstGame.h"
 #include "LuaConstPlatform.h"
-#include "LuaConstPolicyType.h"
 #include "LuaInterCall.h"
 #include "LuaSyncedCtrl.h"
 #include "LuaSyncedRead.h"
@@ -154,7 +153,6 @@ bool CUnsyncedLuaHandle::Init(std::string code, const std::string& file)
 		if (!AddEntriesToTable(L, "Game",            LuaConstGame::PushEntries        )) KILL
 		if (!AddEntriesToTable(L, "CMD",              LuaConstCMD::PushEntries        )) KILL
 		if (!AddEntriesToTable(L, "CMDTYPE",      LuaConstCMDTYPE::PushEntries        )) KILL
-		if (!AddEntriesToTable(L, "PolicyType", LuaConstPolicyType::PushEntries       )) KILL
 		if (!AddEntriesToTable(L, "LOG",                 LuaUtils::PushLogEntries     )) KILL
 		#undef KILL
 	}
@@ -619,7 +617,6 @@ bool CSyncedLuaHandle::Init(std::string code, const std::string& file)
 		if (!AddEntriesToTable(L, "Game",            LuaConstGame::PushEntries      )) KILL
 		if (!AddEntriesToTable(L, "CMD",              LuaConstCMD::PushEntries      )) KILL
 		if (!AddEntriesToTable(L, "CMDTYPE",      LuaConstCMDTYPE::PushEntries      )) KILL
-		if (!AddEntriesToTable(L, "PolicyType", LuaConstPolicyType::PushEntries     )) KILL
 		if (!AddEntriesToTable(L, "COB",              LuaConstCOB::PushEntries      )) KILL
 		if (!AddEntriesToTable(L, "SFX",              LuaConstSFX::PushEntries      )) KILL
 		if (!AddEntriesToTable(L, "LOG",                 LuaUtils::PushLogEntries   )) KILL

@@ -8,7 +8,6 @@
 #include "LuaHashString.h"
 #include "LuaUtils.h"
 #include "LuaRules.h"
-#include "LuaPolicyCache.h"
 #include "Game/Camera.h"
 #include "Game/CameraHandler.h"
 #include "Game/Game.h"
@@ -104,8 +103,6 @@ bool LuaUnsyncedRead::PushEntries(lua_State* L)
 
 	REGISTER_LUA_CFUNC(GetGameName);
 	REGISTER_LUA_CFUNC(GetMenuName);
-
-	REGISTER_LUA_CFUNC(GetCachedPolicy);
 
 	REGISTER_LUA_CFUNC(GetProfilerTimeRecord);
 	REGISTER_LUA_CFUNC(GetProfilerRecordNames);
@@ -5196,30 +5193,5 @@ int LuaUnsyncedRead::SolveNURBSCurve(lua_State* L)
 		lua_pushnumber(L, x.z);
 		lua_rawseti(L, -2, ++i);
 	}
-	return 1;
-}
-
-
-/***
- * @function Spring.GetCachedPolicy
- *
- * Retrieve a cached policy from the engine cache.
- *
- * @param policyType integer PolicyType enum value (e.g., PolicyType.MetalTransfer)
- * @param senderTeamId integer
- * @param receiverTeamId integer
- * @return table|nil The cached policy data, or nil if not found
- */
-int LuaUnsyncedRead::GetCachedPolicy(lua_State* L)
-{
-	const int policyType = luaL_checkint(L, 1);
-	const int senderTeamId = luaL_checkint(L, 2);
-	const int receiverTeamId = luaL_checkint(L, 3);
-
-	if (LuaPolicyCache::policyCache.Get(policyType, senderTeamId, receiverTeamId, L)) {
-		return 1;
-	}
-
-	lua_pushnil(L);
 	return 1;
 }

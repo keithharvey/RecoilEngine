@@ -162,7 +162,6 @@ public:
 
 private:
 	void AccumulateFrameExcess();
-	void HandleFrameExcess();
 
 	/**
 	 * @brief gaia team

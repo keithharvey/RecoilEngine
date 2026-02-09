@@ -7,7 +7,6 @@
 #include "Game/GameSetup.h"
 #include "Sim/Misc/GlobalConstants.h"
 #include "Sim/Misc/GlobalSynced.h"
-#include "Sim/Misc/ModInfo.h"
 #include "System/EventHandler.h"
 #include "System/Log/ILog.h"
 
@@ -117,48 +116,18 @@ void CTeamHandler::SetDefaultStartPositions(const CGameSetup* setup)
 }
 void CTeamHandler::AccumulateFrameExcess()
 {
-	// Accumulate this frame's excess into the delayed share buffer
-	// Called every frame; the accumulated total is consumed on slow update
+	ZoneScopedN("PE_AccumulateExcess");
 	for (auto &team : teams) {
 		team.resDelayedShare += team.resExcessThisFrame;
 		team.resExcessThisFrame = 0.0f;
 	}
 }
 
-void CTeamHandler::HandleFrameExcess()
-{
-	std::map <int, SResourcePack> excesses;
-	for (const auto &team : teams)
-		excesses.emplace(team.teamNum, team.resExcessThisFrame);
-
-	/* Note that `resDelayedShare` is a metaaccumulator,
-	 * the reason to have this two-layer accumulation is
-	 * that handling excess right when it happens would
-	 * be too expensive (for example you can have tens of
-	 * thousands of windgens each generating a resource
-	 * instance), having the Lua event handled at slow
-	 * update would reduce control, and having the engine
-	 * handle excess natively outside slow update would
-	 * be inconsistent with other native resource handling. */
-	if (!eventHandler.ResourceExcess(excesses))
-		for (auto &team : teams)
-			team.resDelayedShare += team.resExcessThisFrame;
-
-	for (auto &team : teams)
-		team.resExcessThisFrame = 0.0f;
-}
-
 void CTeamHandler::GameFrame(int frameNum)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 
-	// ResourceExcess mode: Sprung's approach - fire event every frame
-	// ProcessEconomy mode: Accumulate and defer to SlowUpdate
-	if (modInfo.economy_audit_mode == CModInfo::ECONOMY_AUDIT_RESOURCE_EXCESS) {
-		HandleFrameExcess();
-	} else {
-		AccumulateFrameExcess();
-	}
+	AccumulateFrameExcess();
 
 	if ((frameNum % TEAM_SLOWUPDATE_RATE) != 0)
 		return;
@@ -170,10 +139,7 @@ void CTeamHandler::GameFrame(int frameNum)
 		teams[a].SlowUpdate();
 	}
 
-	// ProcessEconomy callin - deferred approach (once per SlowUpdate)
-	if (modInfo.ShouldRunProcessEconomy(frameNum)) {
-		eventHandler.ProcessEconomy(frameNum);
-	}
+	eventHandler.ProcessEconomy(frameNum);
 }
 
 

@@ -1229,7 +1229,7 @@ bool CSyncedLuaHandle::AllowResourceTransfer(int oldTeam, int newTeam, const cha
  */
 bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& excesses)
 {
-	RECOIL_DETAILED_TRACY_ZONE;
+	ZoneScopedN("RE_LuaTotal");
 	LUA_CALL_IN_CHECK(L, true);
 	luaL_checkstack(L, 3, __func__);
 

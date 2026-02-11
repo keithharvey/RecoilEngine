@@ -8,6 +8,7 @@
 #include "Sim/Misc/GlobalConstants.h"
 #include "Sim/Misc/GlobalSynced.h"
 #include "System/EventHandler.h"
+#include "System/Misc/SpringTime.h"
 
 #include "System/Misc/TracyDefs.h"
 
@@ -116,25 +117,25 @@ void CTeamHandler::SetDefaultStartPositions(const CGameSetup* setup)
 
 void CTeamHandler::HandleFrameExcess()
 {
-	std::map <int, SResourcePack> excesses;
-	for (const auto &team : teams)
-		excesses.emplace(team.teamNum, team.resExcessThisFrame);
+	ZoneScopedN("ResourceExcess");
+	const spring_time startTime = spring_gettime();
 
-	/* Note that `resDelayedShare` is a metaaccumulator,
-	 * the reason to have this two-layer accumulation is
-	 * that handling excess right when it happens would
-	 * be too expensive (for example you can have tens of
-	 * thousands of windgens each generating a resource
-	 * instance), having the Lua event handled at slow
-	 * update would reduce control, and having the engine
-	 * handle excess natively outside slow update would
-	 * be inconsistent with other native resource handling. */
+	std::map <int, SResourcePack> excesses;
+	{
+		ZoneScopedN("RE_BuildTable");
+		for (const auto &team : teams)
+			excesses.emplace(team.teamNum, team.resExcessThisFrame);
+	}
+
 	if (!eventHandler.ResourceExcess(excesses))
 		for (auto &team : teams)
 			team.resDelayedShare += team.resExcessThisFrame;
 
 	for (auto &team : teams)
 		team.resExcessThisFrame = 0.0f;
+
+	const auto totalUs = (spring_gettime() - startTime).toMicroSecsi();
+	TracyPlot("Economy/TotalTime_us", static_cast<int64_t>(totalUs));
 }
 
 void CTeamHandler::GameFrame(int frameNum)

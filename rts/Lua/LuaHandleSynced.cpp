@@ -485,18 +485,10 @@ void CSyncedLuaHandle::SetUnitTransferController(int tableRef, int allowTransfer
 	teamShareRef = teamShareRefArg;
 }
 
-void CSyncedLuaHandle::SetResourceExcessController(int ref)
-{
-	if (resourceExcessRef != LUA_NOREF)
-		luaL_unref(L, LUA_REGISTRYINDEX, resourceExcessRef);
-	resourceExcessRef = ref;
-}
-
 void CSyncedLuaHandle::ClearControllerRefs()
 {
 	economyControllerTableRef = LUA_NOREF;
 	processEconomyRef = LUA_NOREF;
-	resourceExcessRef = LUA_NOREF;
 	unitTransferControllerTableRef = LUA_NOREF;
 	allowUnitTransferRef = LUA_NOREF;
 	teamShareRef = LUA_NOREF;
@@ -504,8 +496,6 @@ void CSyncedLuaHandle::ClearControllerRefs()
 
 bool CSyncedLuaHandle::HasCallIn(lua_State* L, const std::string& name) const
 {
-	if (name == "ResourceExcess" && resourceExcessRef != LUA_NOREF)
-		return true;
 	if (name == "ProcessEconomy" && processEconomyRef != LUA_NOREF)
 		return true;
 	return CLuaHandle::HasCallIn(L, name);
@@ -764,6 +754,7 @@ bool CSyncedLuaHandle::TeamShare(int teamID, int targetTeamID)
 void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 {
 	ZoneScopedN("ProcessEconomy");
+	const spring_time startTime = spring_gettime();
 
 	if (!IsValid())
 		return;
@@ -882,6 +873,9 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 	}
 
 	economyAudit.End();
+
+	const auto totalUs = (spring_gettime() - startTime).toMicroSecsi();
+	TracyPlot("Economy/TotalTime_us", static_cast<int64_t>(totalUs));
 }
 
 
@@ -1512,46 +1506,6 @@ bool CSyncedLuaHandle::AllowResourceTransfer(int oldTeam, int newTeam, const cha
 	lua_pop(L, 1);
 	return allow;
 }
-
-/*** Called when excess resources are added.
- * Fires every frame in resource_excess mode (Sprung's approach).
- *
- * @function SyncedCallins:ResourceExcess
- * @param excesses table<teamID, {metal, energy}>
- * @return boolean whether or not Lua handled the event
- */
-bool CSyncedLuaHandle::ResourceExcess(const std::map <int, SResourcePack>& excesses)
-{
-	ZoneScopedN("ResourceExcess");
-	LUA_CALL_IN_CHECK(L, true);
-	luaL_checkstack(L, 3, __func__);
-
-	static const LuaHashString cmdStr(__func__);
-	if (!cmdStr.GetGlobalFunc(L))
-		return false;
-
-	{
-		ZoneScopedN("RE_BuildTable");
-		lua_createtable(L, excesses.size(), 1);
-
-		for (const auto &[teamID, excess] : excesses) {
-			lua_createtable(L, excess.MAX_RESOURCES, 0);
-			for (const auto &[resourceID, resource] : std::views::enumerate(excess)) {
-				lua_pushnumber(L, resource);
-				lua_rawseti(L, -2, resourceID + 1);
-			}
-			lua_rawseti(L, -2, teamID);
-		}
-	}
-
-	if (!RunCallIn(L, cmdStr, 1, 1))
-		return false;
-
-	const bool handled = luaL_optboolean(L, -1, false);
-	lua_pop(L, 1);
-	return handled;
-}
-
 
 /*** Determines if this unit can be controlled directly in FPS view.
  *

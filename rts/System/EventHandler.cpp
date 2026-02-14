@@ -6,8 +6,6 @@
 #include "Lua/LuaOpenGL.h"  // FIXME -- should be moved
 
 #include "Sim/Misc/ModInfo.h"
-#include "Sim/Misc/Team.h"
-#include "Sim/Misc/TeamHandler.h"
 #include "System/Config/ConfigHandler.h"
 #include "System/Exceptions.h"
 #include "System/Platform/Threading.h"
@@ -586,12 +584,6 @@ void CEventHandler::ProcessEconomy(int gameFrame)
 {
 	ZoneScoped;
 	ITERATE_EVENTCLIENTLIST(ProcessEconomy, gameFrame);
-}
-
-bool CEventHandler::ResourceExcess(const std::map <int, SResourcePack> &excess)
-{
-	ZoneScoped;
-	return ControlIterateDefFalse(listResourceExcess, &CEventClient::ResourceExcess, excess);
 }
 
 void CEventHandler::GameProgress(int gameFrame)

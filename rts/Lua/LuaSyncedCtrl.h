@@ -57,7 +57,6 @@ class LuaSyncedCtrl
 		static int SetTeamShareLevel(lua_State* L);
 		static int ShareTeamResource(lua_State* L);
 		static int SetEconomyController(lua_State* L);
-		static int SetResourceExcessController(lua_State* L);
 		static int SetUnitTransferController(lua_State* L);
 		static int GetAuditTimer(lua_State* L);
 
@@ -281,7 +280,6 @@ class LuaSyncedCtrl
 
 		static int SetRadarErrorParams(lua_State* L);
 
-	static int SolveWaterfill(lua_State* L);
 };
 
 

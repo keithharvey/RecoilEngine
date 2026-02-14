@@ -344,7 +344,7 @@ void CTeam::SlowUpdate()
 		currentStats.metalUsed  += resPrevExpense.metal;
 		currentStats.energyUsed += resPrevExpense.energy;
 
-		// resDelayedShare is handled by ProcessEconomy or ResourceExcess callins
+		// resDelayedShare is handled by ProcessEconomy callin
 		// They read it and zero it after processing
 	} else {
 		float eShare = 0.0f;

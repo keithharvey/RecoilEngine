@@ -122,8 +122,6 @@ bool LuaSyncedRead::PushEntries(lua_State* L)
 
 	REGISTER_LUA_CFUNC(GetGameFrame);
 	REGISTER_LUA_CFUNC(GetGameSeconds);
-	REGISTER_LUA_CFUNC(IsProcessEconomyActive);
-	REGISTER_LUA_CFUNC(IsResourceExcessActive);
 	REGISTER_LUA_CFUNC(IsEconomyAuditEnabled);
 	REGISTER_LUA_CFUNC(IsEconomyAuditActive);
 	REGISTER_LUA_CFUNC(GetEconomyAuditContext);
@@ -936,39 +934,6 @@ int LuaSyncedRead::GetGameSeconds(lua_State* L)
 
 
 /***
- * Check if ProcessEconomy path should be active for the given/current frame.
- * In ALTERNATE mode, returns true on odd SlowUpdate cycles.
- * 
- * @function Spring.IsProcessEconomyActive
- * @param frameNum number? optional frame number (defaults to current)
- * @return boolean active
- */
-int LuaSyncedRead::IsProcessEconomyActive(lua_State* L)
-{
-	const int frameNum = luaL_optint(L, 1, gs->GetLuaSimFrame());
-	lua_pushboolean(L, modInfo.IsProcessEconomyModeActive(frameNum));
-	return 1;
-}
-
-
-/***
- * Check if ResourceExcess path should be active for the given/current frame.
- * Returns true only on SlowUpdate frames when the ResourceExcess path is enabled.
- * In ALTERNATE mode, returns true on even SlowUpdate cycles.
- * 
- * @function Spring.IsResourceExcessActive
- * @param frameNum number? optional frame number (defaults to current)
- * @return boolean active
- */
-int LuaSyncedRead::IsResourceExcessActive(lua_State* L)
-{
-	const int frameNum = luaL_optint(L, 1, gs->GetLuaSimFrame());
-	lua_pushboolean(L, modInfo.IsResourceExcessModeActive(frameNum));
-	return 1;
-}
-
-
-/***
  * Check if economy audit logging is enabled.
  * 
  * @function Spring.IsEconomyAuditEnabled
@@ -983,7 +948,7 @@ int LuaSyncedRead::IsEconomyAuditEnabled(lua_State* L)
 
 /***
  * Check if an economy audit context is currently active.
- * This is true between Begin() and End() calls (i.e., during ProcessEconomy or ResourceExcess).
+ * This is true between Begin() and End() calls (i.e., during ProcessEconomy).
  * 
  * @function Spring.IsEconomyAuditActive
  * @return boolean active

@@ -249,22 +249,6 @@ public:
 	bool allowEnginePlayerlist;
 	bool game_economy;
 
-	enum EconomyAuditMode {
-		ECONOMY_AUDIT_OFF = 0,           // No special audit mode
-		ECONOMY_AUDIT_PROCESS_ECONOMY,   // Only ProcessEconomy path (existing approach)
-		ECONOMY_AUDIT_RESOURCE_EXCESS,   // Only ResourceExcess path (new approach)
-		ECONOMY_AUDIT_ALTERNATE,         // Alternate between paths each SlowUpdate
-	};
-	EconomyAuditMode economy_audit_mode;
-
-	// For TeamHandler - checks game_economy and isSlowUpdate
-	bool ShouldRunProcessEconomy(int frameNum) const;
-	bool ShouldRunResourceExcess(int frameNum) const;
-	
-	// For Lua API - just checks mode (original semantics)
-	bool IsProcessEconomyModeActive(int frameNum) const;
-	bool IsResourceExcessModeActive(int frameNum) const;
-
 	// how often to report wind speed/direction to wind gens
 	int windChangeReportPeriod;
 
@@ -275,3 +259,4 @@ public:
 extern CModInfo modInfo;
 
 #endif // MOD_INFO_H
+ 

@@ -65,8 +65,6 @@ class CSyncedLuaHandle : public CLuaHandle
 		void ProcessEconomy(int gameFrame) override;
 		bool TeamShare(int teamID, int targetTeamID) override;
 
-		bool ResourceExcess(const std::map <int, SResourcePack>& excess) override;
-
 		std::pair <bool, bool> AllowUnitCreation(const UnitDef* unitDef, const CUnit* builder, const BuildInfo* buildInfo) override;
 		bool AllowUnitTransfer(const CUnit* unit, int newTeam, bool capture) override;
 		bool AllowUnitBuildStep(const CUnit* builder, const CUnit* unit, float part) override;
@@ -139,10 +137,6 @@ class CSyncedLuaHandle : public CLuaHandle
 		int GetProcessEconomyRef() const { return processEconomyRef; }
 		int GetEconomyFunctionRef(const char* name) const;
 
-		// Resource Excess Controller (mirrors ProcessEconomy pattern)
-		void SetResourceExcessController(int ref);
-		int GetResourceExcessRef() const { return resourceExcessRef; }
-
 		// Clear all controller refs (called before Lua state swap)
 		void ClearControllerRefs();
 
@@ -171,9 +165,6 @@ class CSyncedLuaHandle : public CLuaHandle
 		// Economy controller refs
 		int economyControllerTableRef = LUA_NOREF;
 		int processEconomyRef = LUA_NOREF;
-
-		// Resource Excess controller ref (mirrors ProcessEconomy pattern)
-		int resourceExcessRef = LUA_NOREF;
 
 		// Unit transfer controller refs
 		int unitTransferControllerTableRef = LUA_NOREF;

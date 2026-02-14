@@ -47,7 +47,6 @@
 #include "Sim/Misc/TeamHandler.h"
 #include "Sim/Misc/QuadField.h"
 #include "Sim/Misc/Wind.h"
-#include "Sim/Economy/WaterfillSolver.h"
 #include "System/Audit/EconomyAudit.h"
 #include "Sim/MoveTypes/AAirMoveType.h"
 #include "Sim/Path/IPathManager.h"
@@ -296,13 +295,11 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(SetTeamShareLevel);
 	REGISTER_LUA_CFUNC(ShareTeamResource);
 	REGISTER_LUA_CFUNC(SetEconomyController);
-	REGISTER_LUA_CFUNC(SetResourceExcessController);
 	REGISTER_LUA_CFUNC(SetUnitTransferController);
 	REGISTER_LUA_CFUNC(GetAuditTimer);
 	REGISTER_LUA_CFUNC(EconomyAuditLog);
 	REGISTER_LUA_CFUNC(EconomyAuditLogRaw);
 	REGISTER_LUA_CFUNC(EconomyAuditBreakpoint);
-	REGISTER_LUA_CFUNC(SolveWaterfill);
 
 	REGISTER_LUA_CFUNC(AddTeamResourceStats);
 
@@ -1740,92 +1737,6 @@ int LuaSyncedCtrl::ShareTeamResource(lua_State* L)
 	return 0;
 }
 
-/*** Solves the waterfill resource redistribution problem with tax-aware binary search.
- *
- * Computes the optimal "lift" (water level above share targets) such that
- * effective supply equals demand, accounting for piecewise taxation.
- *
- * @function Spring.SolveWaterfill
- * @param members table Array of member tables, each with: current, storage, shareTarget, allowance
- * @param taxRate number Tax rate applied to amounts exceeding allowance (0.0 to 1.0)
- * @return table Result with: lift (number), deltas (table of {gross, net, taxed} per member index)
- */
-int LuaSyncedCtrl::SolveWaterfill(lua_State* L)
-{
-	CheckAllowGameChanges(L);
-
-	if (!lua_istable(L, 1)) {
-		luaL_error(L, "SolveWaterfill: expected table of members as first argument");
-		return 0;
-	}
-
-	const float taxRate = luaL_checkfloat(L, 2);
-
-	std::vector<Economy::WaterfillMember> members;
-
-	const int tableLen = lua_objlen(L, 1);
-	members.reserve(tableLen);
-
-	for (int i = 1; i <= tableLen; ++i) {
-		lua_rawgeti(L, 1, i);
-		if (!lua_istable(L, -1)) {
-			lua_pop(L, 1);
-			continue;
-		}
-
-		Economy::WaterfillMember m;
-
-		lua_getfield(L, -1, "current");
-		m.current = luaL_checkfloat(L, -1);
-		lua_pop(L, 1);
-
-		lua_getfield(L, -1, "storage");
-		m.storage = luaL_checkfloat(L, -1);
-		lua_pop(L, 1);
-
-		lua_getfield(L, -1, "shareTarget");
-		m.shareTarget = luaL_checkfloat(L, -1);
-		lua_pop(L, 1);
-
-		lua_getfield(L, -1, "allowance");
-		m.allowance = lua_isnumber(L, -1) ? lua_tofloat(L, -1) : 0.0f;
-		lua_pop(L, 1);
-
-		members.push_back(m);
-		lua_pop(L, 1);
-	}
-
-	Economy::WaterfillSolver solver;
-	auto result = solver.Solve(members, taxRate);
-
-	lua_newtable(L);
-
-	lua_pushnumber(L, result.lift);
-	lua_setfield(L, -2, "lift");
-
-	lua_newtable(L);
-	for (size_t i = 0; i < result.deltas.size(); ++i) {
-		const auto& d = result.deltas[i];
-
-		if (std::abs(d.gross) < Economy::WaterfillSolver::EPSILON) {
-			continue;
-		}
-
-		lua_newtable(L);
-		lua_pushnumber(L, d.gross);
-		lua_setfield(L, -2, "gross");
-		lua_pushnumber(L, d.net);
-		lua_setfield(L, -2, "net");
-		lua_pushnumber(L, d.taxed);
-		lua_setfield(L, -2, "taxed");
-
-		lua_rawseti(L, -2, static_cast<int>(i) + 1);
-	}
-	lua_setfield(L, -2, "deltas");
-
-	return 1;
-}
-
 /*** Adjusts a team's resource statistics, for post-game graphs.
  *
  * @function Spring.AddTeamResourceStats
@@ -1937,34 +1848,6 @@ int LuaSyncedCtrl::SetEconomyController(lua_State* L)
 
 	// Register the event since there's no global "ProcessEconomy" for UpdateCallIn to find
 	eventHandler.InsertEvent(slh, "ProcessEconomy");
-
-	return 0;
-}
-
-
-/*** Registers the ResourceExcess controller function.
- * When registered, the engine will call this function for resource excess processing.
- * This mirrors the ProcessEconomy pattern: C++ builds data, calls Lua solver, C++ applies results.
- *
- * @function Spring.SetResourceExcessController
- * @param controllerFunc function The controller function(gameFrame, teams) -> results table
- * @return nil
- */
-int LuaSyncedCtrl::SetResourceExcessController(lua_State* L)
-{
-	if (!lua_isfunction(L, 1))
-		luaL_error(L, "SetResourceExcessController requires a function");
-
-	CLuaHandle* lh = CLuaHandle::GetHandle(L);
-	CSyncedLuaHandle* slh = dynamic_cast<CSyncedLuaHandle*>(lh);
-	if (slh == nullptr)
-		return 0;
-
-	lua_pushvalue(L, 1);
-	int funcRef = luaL_ref(L, LUA_REGISTRYINDEX);
-
-	slh->SetResourceExcessController(funcRef);
-	eventHandler.InsertEvent(slh, "ResourceExcess");
 
 	return 0;
 }

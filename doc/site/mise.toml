@@ -92,7 +92,7 @@
 
 	[tasks.lua_check]
 	description = "Sanity check lua library with lua language server"
-	depends = ["lua_library"]
+	depends = ["lua_library", "lua_library_bifurcated"]
 	tools.lua-language-server = "{{env.LUA_LANGUAGE_SERVER_VERSION}}"
 	dir = "../../"
 	run = [
@@ -105,6 +105,20 @@
 	dir = "../../"
 	run = [
 		"lua-doc-extractor --src \"{{vars.lua_doc_paths}}\" --dest {{vars.lua_doc_gen_dest}} --repo \"${LUA_DOC_EXTRACTOR_SOURCE_REF}\""
+	]
+
+	[tasks.lua_library_bifurcated]
+	description = "Generate SpringShared, SpringSynced, and SpringUnsynced context types"
+	depends = ["lua_library"]
+	tools."npm:lua-doc-extractor" = "{{env.LUA_DOC_EXTRACTOR_VERSION}}"
+	dir = "../../"
+	run = [
+		"lua-doc-extractor rts/Lua/LuaSyncedRead.cpp rts/Lua/LuaUnsyncedCtrl.cpp --table-mapping \"Spring:SpringShared\" --strip-helpers --file SpringShared.lua --dest {{vars.lua_doc_gen_dest}} --repo \"${LUA_DOC_EXTRACTOR_SOURCE_REF}\"",
+		"sed -i '/^---@meta$/a\\\\n---@class SpringShared\\nSpringShared = {}' {{vars.lua_doc_gen_dest}}/SpringShared.lua",
+		"lua-doc-extractor rts/Lua/LuaSyncedCtrl.cpp --table-mapping \"Spring:SpringSynced\" --strip-helpers --file SpringSynced.lua --dest {{vars.lua_doc_gen_dest}} --repo \"${LUA_DOC_EXTRACTOR_SOURCE_REF}\"",
+		"sed -i '/^---@meta$/a\\\\n---@class SpringSynced : SpringShared\\nSpringSynced = {}' {{vars.lua_doc_gen_dest}}/SpringSynced.lua",
+		"lua-doc-extractor rts/Lua/LuaUnsyncedRead.cpp --table-mapping \"Spring:SpringUnsynced\" --strip-helpers --file SpringUnsynced.lua --dest {{vars.lua_doc_gen_dest}} --repo \"${LUA_DOC_EXTRACTOR_SOURCE_REF}\"",
+		"sed -i '/^---@meta$/a\\\\n---@class SpringUnsynced : SpringShared\\nSpringUnsynced = {}' {{vars.lua_doc_gen_dest}}/SpringUnsynced.lua"
 	]
 
 	[tasks.latest_release_data]

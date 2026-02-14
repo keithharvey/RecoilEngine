@@ -43,6 +43,10 @@ jobs:
         working-directory: ./recoil/doc/site
         run: mise run lua_library
 
+      - name: Generate bifurcated Lua types
+        working-directory: ./recoil/doc/site
+        run: mise run lua_library_bifurcated
+
       - name: Check out library repo
         uses: actions/checkout@v4
         with:

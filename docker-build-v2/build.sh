@@ -135,11 +135,22 @@ else
   P="/"
 fi
 
+# Handle git worktrees: mount the main repo's .git directory if needed
+WORKTREE_MOUNTS=""
+if [[ -f .git ]]; then
+  MAIN_GIT_DIR=$(cat .git | sed 's/gitdir: //')
+  MAIN_REPO_GIT=$(echo "$MAIN_GIT_DIR" | sed 's|/worktrees/.*||')
+  if [[ -d "$MAIN_REPO_GIT" ]]; then
+    WORKTREE_MOUNTS="-v $MAIN_REPO_GIT:$MAIN_REPO_GIT:ro"
+  fi
+fi
+
 $RUNTIME run -it --rm \
     -v "$CWD${P}":/build/src:z,ro \
     -v "$CWD${P}.cache${P}ccache-$OS":/build/cache:z,rw \
     -v "$CWD${P}build-$OS":/build/out:z,rw \
     $UID_FLAGS \
+    $WORKTREE_MOUNTS \
     -e CONFIGURE \
     -e COMPILE \
     -e CMAKE_BUILD_PARALLEL_LEVEL \

@@ -4105,8 +4105,8 @@ int LuaSyncedRead::GetUnitDefID(lua_State* L)
 * 
 * @param unitID integer
 *
-* @return integer|boolean|nil moveDefID
-* @return string? moveDefName
+* @return integer|false|nil moveDefID
+* @return string|nil moveDefName
 */
 
 int LuaSyncedRead::GetUnitMoveDefID(lua_State* L) 

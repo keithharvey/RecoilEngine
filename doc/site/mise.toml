@@ -1,4 +1,5 @@
 [tools]
+"aqua:ip7z/7zip" = "24.09"
 	# We only install tools required for each task on each task, unless all tasks use a tool here
 	# For CI when we need to install and cache all tools, see mise.ci.toml
 

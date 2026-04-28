@@ -1,7 +1,7 @@
 if (gadgetHandler:IsSyncedCode()) then
 
-		local GetAllFeatures     = Spring.GetAllFeatures
-		local GetFeatureAllyTeam = Spring.GetFeatureAllyTeam
+		local GetAllFeatures     = SpringShared.GetAllFeatures
+		local GetFeatureAllyTeam = SpringShared.GetFeatureAllyTeam
 
 		function gadget:Initialize()
 		end
@@ -48,32 +48,32 @@ else
 		local m_max    = math.max
 		local m_bit_or = math.bit_or
 
-		local Echo               = Spring.Echo
-		local GetConfigInt       = Spring.GetConfigInt
-		local SetConfigInt       = Spring.SetConfigInt
-		local GetCameraPosition  = Spring.GetCameraPosition
-		local SetUnitLuaDraw     = Spring.UnitRendering.SetUnitLuaDraw
-		local SetFeatureLuaDraw  = Spring.UnitRendering.SetFeatureLuaDraw
-		local GetUnitPosition    = Spring.GetUnitPosition
-		local GetFeaturePosition = Spring.GetFeaturePosition
-		local GetUnitVelocity    = Spring.GetUnitVelocity
-		local GetFrameTimeOffset = Spring.GetFrameTimeOffset
-		local GetUnitTeam        = Spring.GetUnitTeam
-		local GetUnitAllyTeam    = Spring.GetUnitAllyTeam
-		local GetLocalTeamID     = Spring.GetLocalTeamID
-		local GetMyAllyTeamID    = Spring.GetMyAllyTeamID
-		local GetSpectatingState = Spring.GetSpectatingState
+		local Echo               = SpringShared.Echo
+		local GetConfigInt       = SpringUnsynced.GetConfigInt
+		local SetConfigInt       = SpringUnsynced.SetConfigInt
+		local GetCameraPosition  = SpringUnsynced.GetCameraPosition
+		local SetUnitLuaDraw     = SpringUnsynced.UnitRendering.SetUnitLuaDraw
+		local SetFeatureLuaDraw  = SpringUnsynced.UnitRendering.SetFeatureLuaDraw
+		local GetUnitPosition    = SpringShared.GetUnitPosition
+		local GetFeaturePosition = SpringShared.GetFeaturePosition
+		local GetUnitVelocity    = SpringShared.GetUnitVelocity
+		local GetFrameTimeOffset = SpringUnsynced.GetFrameTimeOffset
+		local GetUnitTeam        = SpringShared.GetUnitTeam
+		local GetUnitAllyTeam    = SpringShared.GetUnitAllyTeam
+		local GetLocalTeamID     = SpringUnsynced.GetLocalTeamID
+		local GetMyAllyTeamID    = SpringUnsynced.GetMyAllyTeamID
+		local GetSpectatingState = SpringUnsynced.GetSpectatingState
 
-		local GetUnitDefID        = Spring.GetUnitDefID
-		local GetUnitHealth       = Spring.GetUnitHealth
-		local GetUnitExperience   = Spring.GetUnitExperience
-		local GetUnitIsStunned    = Spring.GetUnitIsStunned
-		local GetUnitStockpile    = Spring.GetUnitStockpile
-		local GetUnitGroup        = Spring.GetUnitGroup
-		local GetUnitHeight       = Spring.GetUnitHeight
-		local GetFeatureHeight    = Spring.GetFeatureHeight
-		local GetFeatureResources = Spring.GetFeatureResources
-		local GetFeatureHealth    = Spring.GetFeatureHealth
+		local GetUnitDefID        = SpringShared.GetUnitDefID
+		local GetUnitHealth       = SpringShared.GetUnitHealth
+		local GetUnitExperience   = SpringShared.GetUnitExperience
+		local GetUnitIsStunned    = SpringShared.GetUnitIsStunned
+		local GetUnitStockpile    = SpringShared.GetUnitStockpile
+		local GetUnitGroup        = SpringUnsynced.GetUnitGroup
+		local GetUnitHeight       = SpringShared.GetUnitHeight
+		local GetFeatureHeight    = SpringShared.GetFeatureHeight
+		local GetFeatureResources = SpringShared.GetFeatureResources
+		local GetFeatureHealth    = SpringShared.GetFeatureHealth
 
 		local glPushMatrix   = gl.PushMatrix
 		local glPopMatrix    = gl.PopMatrix
@@ -249,7 +249,7 @@ else
 				gadgetHandler:AddSyncAction(funcName, func, "")
 			end
 
-			Spring.SendCommands({"showhealthbars 0", "showrezbars 0"})
+			SpringUnsynced.SendCommands({"showhealthbars 0", "showrezbars 0"})
 		end
 
 		function gadget:Shutdown()

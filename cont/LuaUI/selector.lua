@@ -140,7 +140,7 @@ end
 
 
 function widget:MouseWheel(up, value)
-  local a,c,m,s = Spring.GetModKeyState()
+  local a,c,m,s = SpringUnsynced.GetModKeyState()
   if (a or m) then
     return false  -- alt and meta allow normal control
   end
@@ -246,7 +246,7 @@ function widget:DrawScreen()
 
 
   -- draw the widget labels
-  local mx,my,lmb,mmb,rmb = Spring.GetMouseState()
+  local mx,my,lmb,mmb,rmb = SpringUnsynced.GetMouseState()
   
   local tcol = WhiteStr
   if minx < mx and mx < minx + 30 and miny - 20 < my and my < miny then
@@ -460,7 +460,7 @@ end
 
 
 function widget:MousePress(x, y, button)
-  if (Spring.IsGUIHidden()) then
+  if (SpringUnsynced.IsGUIHidden()) then
     return false
   end
 
@@ -528,7 +528,7 @@ end
 
 
 function widget:MouseRelease(x, y, button)
-  if (Spring.IsGUIHidden()) then
+  if (SpringUnsynced.IsGUIHidden()) then
     return -1
   end
 

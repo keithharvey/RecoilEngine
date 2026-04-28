@@ -118,7 +118,7 @@ local shader = gl.CreateShader({
 	]],
 })
 
-Spring.Echo(gl.GetShaderLog())
+SpringShared.Echo(gl.GetShaderLog())
 
 
 

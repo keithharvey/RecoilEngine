@@ -33,7 +33,7 @@ local function Load()
   for i, f in ipairs(files) do
     local tdf, err = TDF.Parse(f)
     if (tdf == nil) then
-      Spring.Log(section, LOG.ERROR, err)
+      SpringShared.Log(section, LOG.ERROR, err)
     else
       for menuEntry, menuTable in pairs(tdf) do
         if (type(menuTable) == 'table') then

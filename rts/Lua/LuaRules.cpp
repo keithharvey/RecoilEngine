@@ -92,13 +92,13 @@ bool CLuaRules::AddUnsyncedCode(lua_State* L)
 {
 	lua_getglobal(L, "Spring");
 
-	/*** @field Spring.UnitRendering ObjectRenderingTable */
+	/*** @field SpringUnsynced.UnitRendering ObjectRenderingTable */
 	lua_pushliteral(L, "UnitRendering");
 	lua_createtable(L, 0, 17);
 	LuaObjectRendering<LUAOBJ_UNIT>::PushEntries(L);
 	lua_rawset(L, -3);
 
-	/*** @field Spring.FeatureRendering ObjectRenderingTable */
+	/*** @field SpringUnsynced.FeatureRendering ObjectRenderingTable */
 	lua_pushliteral(L, "FeatureRendering");
 	lua_createtable(L, 0, 17);
 	LuaObjectRendering<LUAOBJ_FEATURE>::PushEntries(L);

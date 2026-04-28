@@ -60,17 +60,17 @@ local glTranslate              = gl.Translate
 local glUnitDef                = gl.UnitDef
 local glUnitShape              = gl.UnitShape
 local glVertex                 = gl.Vertex
-local spGetModKeyState         = Spring.GetModKeyState
-local spGetMouseState          = Spring.GetMouseState
-local spGetMyTeamID            = Spring.GetMyTeamID
-local spGetSelectedUnits       = Spring.GetSelectedUnits
-local spGetSelectedUnitsCounts = Spring.GetSelectedUnitsCounts
-local spGetSelectedUnitsSorted = Spring.GetSelectedUnitsSorted
-local spGetTeamUnitsSorted     = Spring.GetTeamUnitsSorted
-local spGetUnitDefDimensions   = Spring.GetUnitDefDimensions
-local spSelectUnitArray        = Spring.SelectUnitArray
-local spSelectUnitMap          = Spring.SelectUnitMap
-local spSendCommands           = Spring.SendCommands
+local spGetModKeyState         = SpringUnsynced.GetModKeyState
+local spGetMouseState          = SpringUnsynced.GetMouseState
+local spGetMyTeamID            = SpringUnsynced.GetMyTeamID
+local spGetSelectedUnits       = SpringUnsynced.GetSelectedUnits
+local spGetSelectedUnitsCounts = SpringUnsynced.GetSelectedUnitsCounts
+local spGetSelectedUnitsSorted = SpringUnsynced.GetSelectedUnitsSorted
+local spGetTeamUnitsSorted     = SpringShared.GetTeamUnitsSorted
+local spGetUnitDefDimensions   = SpringShared.GetUnitDefDimensions
+local spSelectUnitArray        = SpringUnsynced.SelectUnitArray
+local spSelectUnitMap          = SpringUnsynced.SelectUnitMap
+local spSendCommands           = SpringUnsynced.SendCommands
 
 
 -------------------------------------------------------------------------------

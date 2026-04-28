@@ -1,6 +1,6 @@
 
-if not (Spring.GetConfigInt("LuaSocketEnabled", 0) == 1) then
-	Spring.Echo("LuaSocketEnabled is disabled")
+if not (SpringUnsynced.GetConfigInt("LuaSocketEnabled", 0) == 1) then
+	SpringShared.Echo("LuaSocketEnabled is disabled")
 	return false
 end
 
@@ -54,7 +54,7 @@ end
 local function SocketListen(host, port)
 	server = socket.bind(host, port)
 	if server==nil then
-		Spring.Echo("Error binding to " .. host .. ":" .. port)
+		SpringShared.Echo("Error binding to " .. host .. ":" .. port)
 		return false
 	end
 	server:settimeout(0)
@@ -70,7 +70,7 @@ end
 local data
 -- called when data was received through a connection
 local function SocketDataReceived(sock, str)
-	Spring.SendCommands(str)
+	SpringUnsynced.SendCommands(str)
 end
 
 local headersent
@@ -84,18 +84,18 @@ end
 
 -- called when a connection is closed
 local function SocketClosed(sock)
-	Spring.Echo("closed connection")
+	SpringShared.Echo("closed connection")
 end
 
 local function ClientConnected(sock)
 	local client, err = sock:accept()
 	if client == nil  then
-		Spring.Echo("Accept failed: " .. err)
+		SpringShared.Echo("Accept failed: " .. err)
 	end
 	client:settimeout(0)
 	set:insert(client)
 	ip, port = sock:getsockname()
-	Spring.Echo("Accepted connection from " .. ip ..":" .. port)
+	SpringShared.Echo("Accepted connection from " .. ip ..":" .. port)
 end
 
 function widget:AddConsoleLine(line)
@@ -118,7 +118,7 @@ function widget:Update()
 			-- nothing to do, return
 			return
 		end
-		Spring.Echo("Error in select: " .. error)
+		SpringShared.Echo("Error in select: " .. error)
 	end
 	for _, input in ipairs(readable) do
 		if input==server then -- server socket got readable (client connected)

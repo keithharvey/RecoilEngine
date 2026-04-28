@@ -37,16 +37,16 @@ local glLineWidth = gl.LineWidth
 local glPointSize = gl.PointSize
 local glVertex    = gl.Vertex
 
-local spGetCameraState   = Spring.GetCameraState
-local spGetCameraVectors = Spring.GetCameraVectors
-local spGetModKeyState   = Spring.GetModKeyState
-local spGetMouseState    = Spring.GetMouseState
-local spIsAboveMiniMap   = Spring.IsAboveMiniMap
-local spSendCommands     = Spring.SendCommands
-local spSetCameraState   = Spring.SetCameraState
-local spSetMouseCursor   = Spring.SetMouseCursor
-local spTraceScreenRay   = Spring.TraceScreenRay
-local spWarpMouse        = Spring.WarpMouse
+local spGetCameraState   = SpringUnsynced.GetCameraState
+local spGetCameraVectors = SpringUnsynced.GetCameraVectors
+local spGetModKeyState   = SpringUnsynced.GetModKeyState
+local spGetMouseState    = SpringUnsynced.GetMouseState
+local spIsAboveMiniMap   = SpringUnsynced.IsAboveMiniMap
+local spSendCommands     = SpringUnsynced.SendCommands
+local spSetCameraState   = SpringUnsynced.SetCameraState
+local spSetMouseCursor   = SpringUnsynced.SetMouseCursor
+local spTraceScreenRay   = SpringUnsynced.TraceScreenRay
+local spWarpMouse        = SpringUnsynced.WarpMouse
 
 
 --------------------------------------------------------------------------------

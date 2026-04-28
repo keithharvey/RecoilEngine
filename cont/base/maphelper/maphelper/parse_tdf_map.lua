@@ -163,7 +163,7 @@ end
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-local print = Spring.Echo
+local print = SpringShared.Echo
 local function PrintTable(t, indent)
   indent = indent or ''
   for k,v in pairs(t) do

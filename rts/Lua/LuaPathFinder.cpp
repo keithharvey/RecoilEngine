@@ -212,7 +212,7 @@ static void CreatePathMetatable(lua_State* L)
 /******************************************************************************/
 
 /***
- * @function Spring.RequestPath
+ * @function SpringShared.RequestPath
  * @param moveID number|string
  * @param startX number
  * @param startY number
@@ -263,7 +263,7 @@ int LuaPathFinder::RequestPath(lua_State* L)
 
 
 /***
- * @function Spring.InitPathNodeCostsArray
+ * @function SpringShared.InitPathNodeCostsArray
  * @param overlayIndex number
  * @param sizeX number
  * @param sizeZ number
@@ -302,7 +302,7 @@ int LuaPathFinder::InitPathNodeCostsArray(lua_State* L)
 }
 
 /***
- * @function Spring.FreePathNodeCostsArray
+ * @function SpringShared.FreePathNodeCostsArray
  * @param overlayIndex number
  * @return boolean success
  */
@@ -340,7 +340,7 @@ int LuaPathFinder::FreePathNodeCostsArray(lua_State* L)
 
 
 /***
- * @function Spring.SetPathNodeCosts
+ * @function SpringShared.SetPathNodeCosts
  * @param overlayIndex number
  * @return boolean success
  */
@@ -369,7 +369,7 @@ int LuaPathFinder::SetPathNodeCosts(lua_State* L)
 }
 
 /***
- * @function Spring.GetPathNodeCosts
+ * @function SpringShared.GetPathNodeCosts
  * @param overlayIndex number
  * @return boolean|table costs
  */
@@ -405,7 +405,7 @@ int LuaPathFinder::GetPathNodeCosts(lua_State* L)
 
 
 /***
- * @function Spring.SetPathNodeCost
+ * @function SpringShared.SetPathNodeCost
  * @param overlayIndex number
  * @param nodeX number
  * @param nodeZ number
@@ -443,7 +443,7 @@ int LuaPathFinder::SetPathNodeCost(lua_State* L)
 }
 
 /***
- * @function Spring.GetPathNodeCost
+ * @function SpringShared.GetPathNodeCost
  * @param nodeX number
  * @param nodeZ number
  * @return number cost

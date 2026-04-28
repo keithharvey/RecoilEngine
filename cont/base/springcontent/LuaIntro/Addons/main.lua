@@ -173,7 +173,7 @@ end
 
 
 function addon.MousePress(...)
-	--Spring.Echo(...)
+	--SpringShared.Echo(...)
 end
 
 

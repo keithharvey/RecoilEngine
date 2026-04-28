@@ -31,13 +31,13 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-local spGetSelectedUnits      = Spring.GetSelectedUnits
-local spGetUnitPaletteIndex   = Spring.GetUnitPaletteIndex
-local spSetUnitPaletteIndex   = Spring.SetUnitPaletteIndex
-local spGetCustomPaletteColor = Spring.GetCustomPaletteColor
-local spSetCustomPaletteColor = Spring.SetCustomPaletteColor
-local spEcho                  = Spring.Echo
-local spGetKeyCode            = Spring.GetKeyCode
+local spGetSelectedUnits      = SpringUnsynced.GetSelectedUnits
+local spGetUnitPaletteIndex   = SpringUnsynced.GetUnitPaletteIndex
+local spSetUnitPaletteIndex   = SpringUnsynced.SetUnitPaletteIndex
+local spGetCustomPaletteColor = SpringUnsynced.GetCustomPaletteColor
+local spSetCustomPaletteColor = SpringUnsynced.SetCustomPaletteColor
+local spEcho                  = SpringShared.Echo
+local spGetKeyCode            = SpringUnsynced.GetKeyCode
 
 local currentCustomIndex = 0
 
@@ -66,7 +66,7 @@ end
 --------------------------------------------------------------------------------
 
 function widget:KeyPress(key)
-  local alt, ctrl, meta, shift = Spring.GetModKeyState()
+  local alt, ctrl, meta, shift = SpringUnsynced.GetModKeyState()
 
   if key == keyU then  -- 'U' key
     local selUnits = spGetSelectedUnits()
@@ -80,7 +80,7 @@ function widget:KeyPress(key)
     if shift then
       -- Reset to team color by passing nil
       spSetUnitPaletteIndex(unitID, nil)
-      local teamID = Spring.GetUnitTeam(unitID)
+      local teamID = SpringShared.GetUnitTeam(unitID)
       spEcho("[CustomUnitColor] Reset unit " .. unitID .. " to team color (team " .. teamID .. ")")
     else
       -- Cycle through custom colors

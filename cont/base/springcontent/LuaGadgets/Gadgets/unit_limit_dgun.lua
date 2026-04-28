@@ -26,7 +26,7 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-local enabled = tonumber(Spring.GetModOptions().limitdgun) or 0
+local enabled = tonumber(SpringShared.GetModOptions().limitdgun) or 0
 if (enabled == 0) then
   return false
 end
@@ -45,16 +45,16 @@ local glDeleteList = gl.DeleteList
 local glCreateList = gl.CreateList
 local glCallList = gl.CallList
 
-local GetSpectatingState = Spring.GetSpectatingState
-local GetTeamStartPosition = Spring.GetTeamStartPosition
-local GetTeamList = Spring.GetTeamList
-local GetTeamStartPosition = Spring.GetTeamStartPosition
-local AreTeamsAllied = Spring.AreTeamsAllied
-local GetGaiaTeamID = Spring.GetGaiaTeamID
-local GetMyTeamID = Spring.GetMyTeamID
-local GetTeamInfo = Spring.GetTeamInfo
+local GetSpectatingState = SpringUnsynced.GetSpectatingState
+local GetTeamStartPosition = SpringShared.GetTeamStartPosition
+local GetTeamList = SpringShared.GetTeamList
+local GetTeamStartPosition = SpringShared.GetTeamStartPosition
+local AreTeamsAllied = SpringShared.AreTeamsAllied
+local GetGaiaTeamID = SpringShared.GetGaiaTeamID
+local GetMyTeamID = SpringUnsynced.GetMyTeamID
+local GetTeamInfo = SpringShared.GetTeamInfo
 
-local allyTeamVec = Spring.GetAllyTeamList()
+local allyTeamVec = SpringShared.GetAllyTeamList()
 local myTeamID = GetMyTeamID()
 local gaiaTeamID = GetGaiaTeamID()
 local circlesList
@@ -108,8 +108,8 @@ end
 
 else -- begin synced section
 
-local GetTeamStartPosition = Spring.GetTeamStartPosition
-local GetUnitPosition = Spring.GetUnitPosition
+local GetTeamStartPosition = SpringShared.GetTeamStartPosition
+local GetUnitPosition = SpringShared.GetUnitPosition
 local CMD_MANUALFIRE = CMD.MANUALFIRE
 
 local teamStartPosVec = {} -- cache for team starting pos

@@ -11,7 +11,7 @@ function widget:GetInfo()
 end
 
 function widget:Initialize()
-	local _, _, spec = Spring.GetPlayerInfo(Spring.GetMyPlayerID())
+	local _, _, spec = SpringShared.GetPlayerInfo(SpringUnsynced.GetMyPlayerID())
 	if spec then
 		widgetHandler:RemoveWidget()
 		return false
@@ -19,10 +19,10 @@ function widget:Initialize()
 end
 
 function widget:Update()
-	if (Spring.GetGameSeconds() > 0) then
-		local x, y, z = Spring.GetTeamStartPosition(Spring.GetMyTeamID())
-		local id=Spring.GetMyPlayerID()
-		Spring.MarkerAddPoint(x, y, z, "Start " .. id )
+	if (SpringShared.GetGameSeconds() > 0) then
+		local x, y, z = SpringShared.GetTeamStartPosition(SpringUnsynced.GetMyTeamID())
+		local id=SpringUnsynced.GetMyPlayerID()
+		SpringUnsynced.MarkerAddPoint(x, y, z, "Start " .. id )
 		widgetHandler:RemoveWidget()
 	end
 end

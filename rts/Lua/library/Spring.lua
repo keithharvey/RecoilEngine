@@ -1,3 +1,24 @@
 ---@meta
 
+--- Unified Spring API table combining all synced and unsynced functions.
+---
+--- @deprecated Prefer `SpringSynced`, `SpringUnsynced`, or `SpringShared` —
+--- the namespaced forms give accurate context-aware type checking. `Spring`
+--- is retained as a runtime alias for backwards compatibility, but its
+--- type is the *union* of all three sub-tables, so the static checker
+--- can't distinguish "widget calls a synced function" (which crashes at
+--- runtime) from a valid call. Migrate call sites to the namespaced form
+--- to get the static catch.
+---
+--- At runtime, `SpringSynced`, `SpringUnsynced`, and `SpringShared` are
+--- aliases for the same underlying `Spring` table. The split is purely a
+--- type-system organization driven by lua-doc-extractor; runtime sandboxing
+--- happens in the C++ Lua handlers (LuaHandleSynced, LuaUI, LuaParser)
+--- which only register the appropriate function subsets per context. Note
+--- the asymmetry: widgets cannot see synced functions, but synced code
+--- (gadgets) *can* call unsynced functions (e.g. `Spring.PlaySound`) —
+--- the runtime doesn't gate that direction.
+---
+--- See also: rts/Lua/LuaSpringContext.h
+---@class Spring : SpringShared, SpringSynced, SpringUnsynced
 Spring = {}

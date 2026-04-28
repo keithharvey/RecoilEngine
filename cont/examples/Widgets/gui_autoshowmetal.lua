@@ -24,10 +24,10 @@ function widget:Initialize()
     widgetHandler:RemoveWidget()
     return
   end
-  if Spring.SetAutoShowMetal then
+  if SpringUnsynced.SetAutoShowMetal then
     -- disable automatic showmetal control, check existance so this will
     -- keep working when AutoShowMetal gets removed from future engine version.
-    Spring.SetAutoShowMetal(false)
+    SpringUnsynced.SetAutoShowMetal(false)
   end
 
   local success, mapinfo = pcall(VFS.Include, "mapinfo.lua")
@@ -41,9 +41,9 @@ end
 
 function widget:ActiveCommandChanged(cmdID)
   local wantsMetal = (cmdID and isMex[-cmdID]) or false
-  local isMetalViewOn = (Spring.GetMapDrawMode() == 'metal')
+  local isMetalViewOn = (SpringUnsynced.GetMapDrawMode() == 'metal')
 
   if wantsMetal ~= isMetalViewOn then
-    Spring.SendCommands("showmetalmap")
+    SpringUnsynced.SendCommands("showmetalmap")
   end
 end

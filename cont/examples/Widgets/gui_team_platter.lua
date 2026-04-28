@@ -39,21 +39,21 @@ local glDrawListAtUnit       = gl.DrawListAtUnit
 local glLineWidth            = gl.LineWidth
 local glPolygonOffset        = gl.PolygonOffset
 local glVertex               = gl.Vertex
-local spDiffTimers           = Spring.DiffTimers
-local spGetAllUnits          = Spring.GetAllUnits
-local spGetGroundNormal      = Spring.GetGroundNormal
-local spGetSelectedUnits     = Spring.GetSelectedUnits
-local spGetTeamColor         = Spring.GetTeamColor
-local spGetTimer             = Spring.GetTimer
-local spGetUnitBasePosition  = Spring.GetUnitBasePosition
-local spGetUnitDefDimensions = Spring.GetUnitDefDimensions
-local spGetUnitDefID         = Spring.GetUnitDefID
-local spGetUnitRadius        = Spring.GetUnitRadius
-local spGetUnitTeam          = Spring.GetUnitTeam
-local spGetUnitViewPosition  = Spring.GetUnitViewPosition
-local spIsUnitSelected       = Spring.IsUnitSelected
-local spIsUnitVisible        = Spring.IsUnitVisible
-local spSendCommands         = Spring.SendCommands
+local spDiffTimers           = SpringUnsynced.DiffTimers
+local spGetAllUnits          = SpringShared.GetAllUnits
+local spGetGroundNormal      = SpringShared.GetGroundNormal
+local spGetSelectedUnits     = SpringUnsynced.GetSelectedUnits
+local spGetTeamColor         = SpringUnsynced.GetTeamColor
+local spGetTimer             = SpringUnsynced.GetTimer
+local spGetUnitBasePosition  = SpringShared.GetUnitBasePosition
+local spGetUnitDefDimensions = SpringShared.GetUnitDefDimensions
+local spGetUnitDefID         = SpringShared.GetUnitDefID
+local spGetUnitRadius        = SpringShared.GetUnitRadius
+local spGetUnitTeam          = SpringShared.GetUnitTeam
+local spGetUnitViewPosition  = SpringUnsynced.GetUnitViewPosition
+local spIsUnitSelected       = SpringUnsynced.IsUnitSelected
+local spIsUnitVisible        = SpringUnsynced.IsUnitVisible
+local spSendCommands         = SpringUnsynced.SendCommands
 
 
 --------------------------------------------------------------------------------

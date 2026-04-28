@@ -42,6 +42,21 @@ jobs:
             lua-language-server = "{{env.LUA_LANGUAGE_SERVER_VERSION}}"
             "npm:lua-doc-extractor" = "{{env.LUA_DOC_EXTRACTOR_VERSION}}"
 
+      - name: Override lua-doc-extractor from source
+        if: vars.LUA_DOC_EXTRACTOR_REPO != ''
+        run: |
+          git clone --depth 1 \
+            --branch "${{ vars.LUA_DOC_EXTRACTOR_BRANCH || 'main' }}" \
+            "https://github.com/${{ vars.LUA_DOC_EXTRACTOR_REPO }}.git" \
+            /tmp/lua-doc-extractor
+          cd /tmp/lua-doc-extractor
+          npm ci && npm run build
+          mkdir -p /tmp/override-bin
+          printf '#!/bin/bash\nexec node /tmp/lua-doc-extractor/dist/src/cli.js "$@"\n' \
+            > /tmp/override-bin/lua-doc-extractor
+          chmod +x /tmp/override-bin/lua-doc-extractor
+          echo "/tmp/override-bin" >> "$GITHUB_PATH"
+
       - name: Run lua-language-server --check
         working-directory: ./doc/site
         run: mise run lua_check

@@ -13,6 +13,6 @@ if gadgetHandler:IsSyncedCode() then
 end
 
 function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerDefID, attackerTeam)
-  Spring.SetUnitNoSelect(unitID, true)
-  Spring.SetUnitNoGroup(unitID, true)
+  SpringUnsynced.SetUnitNoSelect(unitID, true)
+  SpringUnsynced.SetUnitNoGroup(unitID, true)
 end

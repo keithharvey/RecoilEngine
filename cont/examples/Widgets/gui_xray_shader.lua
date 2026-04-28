@@ -42,13 +42,13 @@ local glPolygonOffset        = gl.PolygonOffset
 local glSmoothing            = gl.Smoothing
 local glUnit                 = gl.Unit
 local glUseShader            = gl.UseShader
-local spEcho                 = Spring.Echo
-local spGetAllFeatures       = Spring.GetAllFeatures
-local spGetTeamColor         = Spring.GetTeamColor
-local spGetTeamList          = Spring.GetTeamList
-local spGetTeamUnits         = Spring.GetTeamUnits
-local spIsUnitVisible        = Spring.IsUnitVisible
-local spIsUnitIconic         = Spring.IsUnitIconic
+local spEcho                 = SpringShared.Echo
+local spGetAllFeatures       = SpringShared.GetAllFeatures
+local spGetTeamColor         = SpringUnsynced.GetTeamColor
+local spGetTeamList          = SpringShared.GetTeamList
+local spGetTeamUnits         = SpringShared.GetTeamUnits
+local spIsUnitVisible        = SpringUnsynced.IsUnitVisible
+local spIsUnitIconic         = SpringUnsynced.IsUnitIconic
 
 
 --------------------------------------------------------------------------------

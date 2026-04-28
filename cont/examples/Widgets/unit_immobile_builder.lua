@@ -30,13 +30,13 @@ end
 local CMD_MOVE_STATE    = CMD.MOVE_STATE
 local CMD_PATROL        = CMD.PATROL
 local CMD_STOP          = CMD.STOP
-local spGetGameFrame    = Spring.GetGameFrame
-local spGetMyTeamID     = Spring.GetMyTeamID
-local spGetTeamUnits    = Spring.GetTeamUnits
-local spGetUnitCommands = Spring.GetUnitCommands
-local spGetUnitDefID    = Spring.GetUnitDefID
-local spGetUnitPosition = Spring.GetUnitPosition
-local spGiveOrderToUnit = Spring.GiveOrderToUnit
+local spGetGameFrame    = SpringShared.GetGameFrame
+local spGetMyTeamID     = SpringUnsynced.GetMyTeamID
+local spGetTeamUnits    = SpringShared.GetTeamUnits
+local spGetUnitCommands = SpringShared.GetUnitCommands
+local spGetUnitDefID    = SpringShared.GetUnitDefID
+local spGetUnitPosition = SpringShared.GetUnitPosition
+local spGiveOrderToUnit = SpringShared.GiveOrderToUnit
 
 local hmsx = Game.mapSizeX/2
 local hmsz = Game.mapSizeZ/2

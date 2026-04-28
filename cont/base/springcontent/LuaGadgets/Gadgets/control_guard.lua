@@ -13,12 +13,12 @@ if not gadgetHandler:IsSyncedCode() then
 	return false
 end
 
-local spGetUnitCurrentCommand = Spring.GetUnitCurrentCommand
-local spGetUnitPosition = Spring.GetUnitPosition
-local spGetUnitDefID = Spring.GetUnitDefID
-local spValidUnitID = Spring.ValidUnitID
-local spGiveOrderToUnit = Spring.GiveOrderToUnit
-local spIsPosInMap = Spring.IsPosInMap
+local spGetUnitCurrentCommand = SpringShared.GetUnitCurrentCommand
+local spGetUnitPosition = SpringShared.GetUnitPosition
+local spGetUnitDefID = SpringShared.GetUnitDefID
+local spValidUnitID = SpringShared.ValidUnitID
+local spGiveOrderToUnit = SpringShared.GiveOrderToUnit
+local spIsPosInMap = SpringShared.IsPosInMap
 
 local CMD_GUARD = CMD.GUARD
 local CMD_INSERT = CMD.INSERT
@@ -45,8 +45,8 @@ local allMobileUnits = {}
 local guardingUnits = {}
 
 function gadget:Initialize()
-	for _, unitID in pairs(Spring.GetAllUnits()) do
-		gadget:UnitCreated(unitID, Spring.GetUnitDefID(unitID))
+	for _, unitID in pairs(SpringShared.GetAllUnits()) do
+		gadget:UnitCreated(unitID, SpringShared.GetUnitDefID(unitID))
 	end
 end
 

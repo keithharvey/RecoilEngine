@@ -14,7 +14,7 @@
  * For callouts related to OpenGL usage in Recoil, see `gl`.
  *
  * @see gl
- * @enum GL
+ * @table GL
  */
 
 bool LuaConstGL::PushEntries(lua_State* L)

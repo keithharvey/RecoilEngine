@@ -50,10 +50,10 @@
 ---
 ---@class rgba
 ---@helper
----@field [1] number Red value.
----@field [2] number Green value.
----@field [3] number Blue value.
----@field [4] number Alpha value.
+---@field [1] number? Red value.
+---@field [2] number? Green value.
+---@field [3] number? Blue value.
+---@field [4] number? Alpha value.
 
 ---Indicator bytes representing color code operations during font rendering
 ---

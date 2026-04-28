@@ -792,7 +792,7 @@ int LuaShaders::CreateShader(lua_State* L)
 /*** Deletes a shader identified by shaderID
  *
  * @function gl.DeleteShader
- * @param shaderID integer
+ * @param shaderID Shader|integer
  */
 int LuaShaders::DeleteShader(lua_State* L)
 {
@@ -809,7 +809,7 @@ int LuaShaders::DeleteShader(lua_State* L)
 /*** Binds a shader program identified by shaderID. Pass 0 to disable the shader. Returns whether the shader was successfully bound.
  *
  * @function gl.UseShader
- * @param shaderID integer
+ * @param shaderID Shader|integer
  * @return boolean linked
  */
 int LuaShaders::UseShader(lua_State* L)
@@ -846,7 +846,7 @@ int LuaShaders::UseShader(lua_State* L)
  * Can be used in NON-drawing events (to update uniforms etc.)!
  *
  * @function gl.ActiveShader
- * @param shaderID integer
+ * @param shaderID Shader|integer
  * @param func function
  * @param ... any Arguments
  */
@@ -937,7 +937,7 @@ static const char* UniformTypeString(GLenum type)
  * names, types (float, int, uint) and sizes (float, vec4, ...).
  *
  * @function gl.GetActiveUniforms
- * @param shaderID integer
+ * @param shaderID Shader|integer
  * @return ActiveUniform[] activeUniforms
  */
 int LuaShaders::GetActiveUniforms(lua_State* L)
@@ -972,7 +972,7 @@ int LuaShaders::GetActiveUniforms(lua_State* L)
  * values with function `gl.Uniform`.
  *
  * @function gl.GetUniformLocation
- * @param shaderID integer
+ * @param shaderID Shader|integer
  * @param name string
  * @return GL locationID
  */
@@ -1373,7 +1373,7 @@ int LuaShaders::GetEngineModelUniformDataSize(lua_State* L)
 /*** Sets the Geometry shader parameters for shaderID. Needed by geometry shader programs (check the opengl GL_ARB_geometry_shader4 extension for glProgramParameteri)
  *
  * @function gl.SetGeometryShaderParameter
- * @param shaderID integer
+ * @param shaderID Shader|integer
  * @param key number
  * @param value number
  * @return nil

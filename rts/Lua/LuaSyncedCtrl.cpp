@@ -390,6 +390,7 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 	if (!LuaSyncedMoveCtrl::PushMoveCtrl(L))
 		return false;
 
+	/*** @field Spring.UnitScript UnitScriptTable */
 	if (!CLuaUnitScript::PushEntries(L))
 		return false;
 
@@ -1160,7 +1161,7 @@ int LuaSyncedCtrl::GameOver(lua_State* L)
 /*** Set tidal strength
  *
  * @function Spring.SetTidal
- * @param strength number
+ * @param strength number?
  * @return nil
  */
 int LuaSyncedCtrl::SetTidal(lua_State* L)
@@ -1173,8 +1174,8 @@ int LuaSyncedCtrl::SetTidal(lua_State* L)
 /*** Set wind strength
  *
  * @function Spring.SetWind
- * @param minStrength number
- * @param maxStrength number
+ * @param minStrength number?
+ * @param maxStrength number?
  * @return nil
  */
 int LuaSyncedCtrl::SetWind(lua_State* L)
@@ -1566,7 +1567,7 @@ void SetRulesParam(lua_State* L, const char* caller, int offset,
 /***
  * @function Spring.SetGameRulesParam
  * @param paramName string
- * @param paramValue ?number|string numeric paramValues in quotes will be converted to number.
+ * @param paramValue (number|string|boolean)? numeric paramValues in quotes will be converted to number.
  * @param losAccess losAccess?
  * @return nil
  */
@@ -1581,7 +1582,7 @@ int LuaSyncedCtrl::SetGameRulesParam(lua_State* L)
  * @function Spring.SetTeamRulesParam
  * @param teamID integer
  * @param paramName string
- * @param paramValue ?number|string numeric paramValues in quotes will be converted to number.
+ * @param paramValue (number|string|boolean)? numeric paramValues in quotes will be converted to number.
  * @param losAccess losAccess?
  * @return nil
  */
@@ -1599,7 +1600,7 @@ int LuaSyncedCtrl::SetTeamRulesParam(lua_State* L)
  * @function Spring.SetPlayerRulesParam
  * @param playerID integer
  * @param paramName string
- * @param paramValue ?number|string numeric paramValues in quotes will be converted to number.
+ * @param paramValue (number|string|boolean)? numeric paramValues in quotes will be converted to number.
  * @param losAccess losAccess?
  * @return nil
  */
@@ -1623,7 +1624,7 @@ int LuaSyncedCtrl::SetPlayerRulesParam(lua_State* L)
  * @function Spring.SetUnitRulesParam
  * @param unitID integer
  * @param paramName string
- * @param paramValue ?number|string numeric paramValues in quotes will be converted to number.
+ * @param paramValue (number|string|boolean)? numeric paramValues in quotes will be converted to number.
  * @param losAccess losAccess?
  * @return nil
  */
@@ -1643,7 +1644,7 @@ int LuaSyncedCtrl::SetUnitRulesParam(lua_State* L)
  * @function Spring.SetFeatureRulesParam
  * @param featureID integer
  * @param paramName string
- * @param paramValue ?number|string numeric paramValues in quotes will be converted to number.
+ * @param paramValue (number|string|boolean)? numeric paramValues in quotes will be converted to number.
  * @param losAccess losAccess?
  * @return nil
  */
@@ -1813,7 +1814,7 @@ int LuaSyncedCtrl::GetCOBScriptID(lua_State* L)
  * @param posY number
  * @param posZ number
  * @param facing Facing
- * @param teamID integer
+ * @param teamID integer?
  * @param build boolean? (Default: `false`) The unit is created in "being built" state with zero `buildProgress`.
  * @param flattenGround boolean? (Default: `true`) The unit flattens ground, if it normally does so.
  * @param unitID integer? Request a specific unitID.
@@ -2976,8 +2977,8 @@ int LuaSyncedCtrl::SetUnitLosState(lua_State* L)
  * - if the boolean is true it takes the absolute value of it.
  *
  * @param unitID integer
- * @param cloak boolean|number
- * @param cloakArg boolean|number
+ * @param cloak (boolean|number)?
+ * @param cloakArg (boolean|number)?
  * @return nil
  */
 int LuaSyncedCtrl::SetUnitCloak(lua_State* L)
@@ -3139,7 +3140,7 @@ int LuaSyncedCtrl::SetUnitMetalExtraction(lua_State* L)
  *
  * @function Spring.SetUnitHarvestStorage
  * @param unitID integer
- * @param metal number
+ * @param metal number?
  * @return nil
  */
 int LuaSyncedCtrl::SetUnitHarvestStorage(lua_State* L)
@@ -3161,7 +3162,7 @@ int LuaSyncedCtrl::SetUnitHarvestStorage(lua_State* L)
  * @function Spring.SetUnitBuildParams
  * @param unitID integer
  * @param paramName string one of `buildRange`|`buildDistance`|`buildRange3D`
- * @param value number|boolean boolean when `paramName` is `buildRange3D`, otherwise number.
+ * @param value (number|boolean)? boolean when `paramName` is `buildRange3D`, otherwise number.
  * @return nil
  */
 int LuaSyncedCtrl::SetUnitBuildParams(lua_State* L)
@@ -3322,7 +3323,7 @@ int LuaSyncedCtrl::SetUnitBlocking(lua_State* L)
 /***
  * @function Spring.SetUnitCrashing
  * @param unitID integer
- * @param crashing boolean
+ * @param crashing boolean?
  * @return boolean success
  */
 int LuaSyncedCtrl::SetUnitCrashing(lua_State* L) {
@@ -3545,7 +3546,8 @@ int LuaSyncedCtrl::SetUnitNeutral(lua_State* L)
  * @param enemyUnitID integer? when nil drops the units current target.
  * @param dgun boolean? (Default: `false`)
  * @param userTarget boolean? (Default: `false`)
- * @param weaponNum number? (Default: `-1`)
+ * @param dontForceTarget boolean?
+ * @param weaponNum integer? (Default: `-1`)
  * @return boolean success
  */
 
@@ -3557,7 +3559,8 @@ int LuaSyncedCtrl::SetUnitNeutral(lua_State* L)
  * @param z number?
  * @param dgun boolean? (Default: `false`)
  * @param userTarget boolean? (Default: `false`)
- * @param weaponNum number? (Default: `-1`)
+ * @param dontForceTarget boolean?
+ * @param weaponNum integer? (Default: `-1`)
  * @return boolean success
  */
 int LuaSyncedCtrl::SetUnitTarget(lua_State* L)
@@ -3669,8 +3672,8 @@ int LuaSyncedCtrl::SetUnitMidAndAimPos(lua_State* L)
 /***
  * @function Spring.SetUnitRadiusAndHeight
  * @param unitID integer
- * @param radius number
- * @param height number
+ * @param radius number?
+ * @param height number?
  * @return boolean success
  */
 int LuaSyncedCtrl::SetUnitRadiusAndHeight(lua_State* L)
@@ -3914,12 +3917,12 @@ int LuaSyncedCtrl::SetUnitSensorRadius(lua_State* L)
  *
  * @function Spring.SetUnitPosErrorParams
  * @param unitID integer
- * @param posErrorVectorX number
- * @param posErrorVectorY number
- * @param posErrorVectorZ number
- * @param posErrorDeltaX number
- * @param posErrorDeltaY number
- * @param posErrorDeltaZ number
+ * @param posErrorVectorX number?
+ * @param posErrorVectorY number?
+ * @param posErrorVectorZ number?
+ * @param posErrorDeltaX number?
+ * @param posErrorDeltaY number?
+ * @param posErrorDeltaZ number?
  * @param nextPosErrorUpdate number?
  * @return nil
  */
@@ -4015,6 +4018,7 @@ int LuaSyncedCtrl::SetUnitLandGoal(lua_State* L)
 /***
  * @function Spring.ClearUnitGoal
  * @param unitID integer
+ * @param maneuver boolean?
  * @return nil
  */
 int LuaSyncedCtrl::ClearUnitGoal(lua_State* L)
@@ -4891,7 +4895,7 @@ int LuaSyncedCtrl::SetFeatureResources(lua_State* L)
  * @function Spring.SetFeatureResurrect
  *
  * @param featureID integer
- * @param unitDef string|integer Can be a number id or a string name, this allows cancelling resurrection by passing `-1`.
+ * @param unitDef (string|integer)? Can be a number id or a string name, this allows cancelling resurrection by passing `-1`.
  * @param facing Facing? (Default: `"south"`)
  * @param progress number? Set the level of progress.
  * @return nil
@@ -5232,8 +5236,8 @@ int LuaSyncedCtrl::SetFeatureMidAndAimPos(lua_State* L)
 /***
  * @function Spring.SetFeatureRadiusAndHeight
  * @param featureID integer
- * @param radius number
- * @param height number
+ * @param radius number?
+ * @param height number?
  * @return boolean success
  */
 int LuaSyncedCtrl::SetFeatureRadiusAndHeight(lua_State* L)
@@ -5510,7 +5514,7 @@ int LuaSyncedCtrl::SetProjectileUseAirLos(lua_State* L)
  * @function Spring.SetProjectileMoveControl
  *
  * @param projectileID integer
- * @param enable boolean
+ * @param enable boolean?
  */
 int LuaSyncedCtrl::SetProjectileMoveControl(lua_State* L)
 {
@@ -6488,7 +6492,6 @@ int LuaSyncedCtrl::SetHeightMap(lua_State* L)
  * ```
  *
  * @param luaFunction function
- * @param arg number
  * @param ... number
  * @return integer? absTotalHeightMapAmountChanged
  */
@@ -7251,7 +7254,7 @@ int LuaSyncedCtrl::ForceUnitCollisionUpdate(lua_State* L)
  * @param transporterID integer
  * @param passengerID integer
  * @param pieceNum number
- * @param force boolean
+ * @param force boolean?
  * @return nil
  */
 int LuaSyncedCtrl::UnitAttach(lua_State* L)
@@ -7373,21 +7376,21 @@ int LuaSyncedCtrl::SetUnitLoadingTransport(lua_State* L)
 /***
  * @class ProjectileParams
  * @x_helper
- * @field pos xyz
- * @field speed xyz
- * @field spread xyz
- * @field error xyz
- * @field end xyz
- * @field owner integer
- * @field team integer
- * @field ttl number
- * @field gravity number
- * @field tracking number
- * @field maxRange number
- * @field startAlpha number
- * @field endAlpha number
- * @field model string
- * @field cegTag string
+ * @field pos xyz?
+ * @field speed xyz?
+ * @field spread xyz?
+ * @field error xyz?
+ * @field end xyz?
+ * @field owner integer?
+ * @field team integer?
+ * @field ttl number?
+ * @field gravity number?
+ * @field tracking number?
+ * @field maxRange number?
+ * @field startAlpha number?
+ * @field endAlpha number?
+ * @field model string?
+ * @field cegTag string?
  */
 
 /***
@@ -7549,18 +7552,18 @@ static int SetExplosionParam(lua_State* L, CExplosionParams& params, DamageArray
  *
  * @class ExplosionParams
  * @x_helper
- * @field weaponDef number
- * @field owner number
- * @field hitUnit number
- * @field hitFeature number
- * @field craterAreaOfEffect number
- * @field damageAreaOfEffect number
- * @field edgeEffectiveness number
- * @field explosionSpeed number
- * @field gfxMod number
- * @field impactOnly boolean
- * @field ignoreOwner boolean
- * @field damageGround boolean
+ * @field weaponDef number?
+ * @field owner number?
+ * @field hitUnit number?
+ * @field hitFeature number?
+ * @field craterAreaOfEffect number?
+ * @field damageAreaOfEffect number?
+ * @field edgeEffectiveness number?
+ * @field explosionSpeed number?
+ * @field gfxMod number?
+ * @field impactOnly boolean?
+ * @field ignoreOwner boolean?
+ * @field damageGround boolean?
  */
 
 /***
@@ -7571,7 +7574,7 @@ static int SetExplosionParam(lua_State* L, CExplosionParams& params, DamageArray
  * @param dirX number? (Default: `0`)
  * @param dirY number? (Default: `0`)
  * @param dirZ number? (Default: `0`)
- * @param explosionParams ExplosionParams
+ * @param explosionParams ExplosionParams?
  * @return nil
  */
 int LuaSyncedCtrl::SpawnExplosion(lua_State* L)

@@ -1,5 +1,23 @@
 ---@meta
 
+---Functions callable from synced contexts only (gadgets). Widgets cannot
+---see this table — calling `SpringSynced.X` from a widget gets `nil` and
+---crashes when the line executes.
+---@class SpringSynced
+SpringSynced = {}
+
+---Functions callable from unsynced contexts only (widgets, gadget unsynced
+---part). Synced code *can* also call these (e.g. `Spring.PlaySound`) — the
+---runtime does not gate that direction. The static catch is on the
+---widget→synced direction only.
+---@class SpringUnsynced
+SpringUnsynced = {}
+
+---Functions callable from any context (synced, unsynced, both). Read-only
+---utilities, math helpers, and pure functions.
+---@class SpringShared
+SpringShared = {}
+
 --- Unified Spring API table combining all synced and unsynced functions.
 ---
 --- @deprecated Prefer `SpringSynced`, `SpringUnsynced`, or `SpringShared` —

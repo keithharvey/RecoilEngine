@@ -3557,6 +3557,7 @@ int LuaUnsyncedCtrl::GiveOrder(lua_State* L)
 /***
  * Give order to specific unit.
  *
+ * @function SpringUnsynced.GiveOrderToUnit
  * @param unitID integer
  * @param cmdID CMD|integer The command ID.
  * @param params CreateCommandParams? Parameters for the given command.
@@ -3590,6 +3591,7 @@ int LuaUnsyncedCtrl::GiveOrderToUnit(lua_State* L)
 /***
  * Give order to multiple units, specified by table keys.
  *
+ * @function SpringUnsynced.GiveOrderToUnitMap
  * @param unitMap table<integer, any> A table with unit IDs as keys.
  * @param cmdID CMD|integer The command ID.
  * @param params CreateCommandParams? Parameters for the given command.
@@ -3623,6 +3625,7 @@ int LuaUnsyncedCtrl::GiveOrderToUnitMap(lua_State* L)
 /***
  * Give order to an array of units.
  *
+ * @function SpringUnsynced.GiveOrderToUnitArray
  * @param unitIDs integer[] Array of unit IDs.
  * @param cmdID CMD|integer The command ID.
  * @param params CreateCommandParams? Parameters for the given command.
@@ -3654,6 +3657,7 @@ int LuaUnsyncedCtrl::GiveOrderToUnitArray(lua_State* L)
 
 /***
  *
+ * @function SpringUnsynced.GiveOrderArrayToUnit
  * @param unitID integer Unit ID.
  * @param commands CreateCommand[]
  * @return boolean ordersGiven `true` if any orders were sent, otherwise `false`.
@@ -3687,6 +3691,7 @@ int LuaUnsyncedCtrl::GiveOrderArrayToUnit(lua_State* L)
 
 /***
  *
+ * @function SpringUnsynced.GiveOrderArrayToUnitMap
  * @param unitMap table<integer, any> A table with unit IDs as keys.
  * @param commands CreateCommand[]
  * @return boolean ordersGiven `true` if any orders were sent, otherwise `false`.
@@ -3719,6 +3724,7 @@ int LuaUnsyncedCtrl::GiveOrderArrayToUnitMap(lua_State* L)
 
 
 /***
+ * @function SpringUnsynced.GiveOrderArrayToUnitArray
  * @param unitIDs integer[] Array of unit IDs.
  * @param commands CreateCommand[]
  * @param pairwise boolean? (Default: `false`) When `false`, assign all commands to each unit.

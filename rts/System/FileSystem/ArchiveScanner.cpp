@@ -1282,44 +1282,58 @@ void CArchiveScanner::WriteCacheData(const std::string& filename)
 			allPoolRootDirs.emplace(CPoolArchive::GetPoolRootDirectory(ai.path + ai.origName));
 		}
 
-		const uint32_t seed = std::chrono::system_clock::now().time_since_epoch().count();
-		std::mt19937 generator(seed);
-		std::uniform_int_distribution<size_t> distribution(0, poolFilesInfo.size() - 1);
-		auto startOffset = distribution(generator);
+		// No pool archives means we have no roots to verify file existence
+		// against. Without this guard, ExistenceTest below returns false for
+		// every entry, the loop erases the entire cache, and the next
+		// iteration dereferences begin()==end() on the now-empty map.
+		// Regression originally introduced in PR #2078 ("Add deadline target
+		// for pool files scanning"), which replaced a naturally-terminating
+		// `it != end()` loop with a time-bounded wraparound loop.
+		if (!allPoolRootDirs.empty()) {
+			const uint32_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+			std::mt19937 generator(seed);
+			std::uniform_int_distribution<size_t> distribution(0, poolFilesInfo.size() - 1);
+			auto startOffset = distribution(generator);
 
-		auto st = poolFilesInfo.begin();
-		std::advance(st, startOffset);
-		auto it = st;
+			auto st = poolFilesInfo.begin();
+			std::advance(st, startOffset);
+			auto it = st;
 
-		// we only want to check if the file still exists, we don't check for size / modDate
-		// this is checked in the checksum code anyway.
-		const auto ExistenceTest = [&allPoolRootDirs = std::as_const(allPoolRootDirs)](const auto& it) {
-			for (const auto& poolRootDir : allPoolRootDirs) {
-				const auto fileName = CPoolArchive::GetPoolFilePath(poolRootDir, it->first);
-				if (FileSystem::FileExists(fileName)) {
-					return true;
+			// we only want to check if the file still exists, we don't check for size / modDate
+			// this is checked in the checksum code anyway.
+			const auto ExistenceTest = [&allPoolRootDirs = std::as_const(allPoolRootDirs)](const auto& it) {
+				for (const auto& poolRootDir : allPoolRootDirs) {
+					const auto fileName = CPoolArchive::GetPoolFilePath(poolRootDir, it->first);
+					if (FileSystem::FileExists(fileName)) {
+						return true;
+					}
 				}
+				return false;
+			};
+
+			// can't spend too much time in this code, thus set the deadline and rely on
+			// random luck and sheer amount of invocations to eventually remove most if not all
+			// stale items from the pool cache
+			static constexpr int64_t MAX_POOL_VERIFICATION_TIME = 1 * 1000;
+			for (auto t0 = spring_now(), t1 = t0; (t1 - t0).toMilliSecsi() < MAX_POOL_VERIFICATION_TIME; t1 = spring_now()) {
+				// Map can drain to empty mid-loop (e.g. all entries genuinely
+				// missing). begin() then equals end(); ExistenceTest(end())
+				// would dereference past the allocated buckets array.
+				if (poolFilesInfo.empty())
+					break;
+
+				// cleanup files that got deleted in the meantime
+				if (ExistenceTest(it))
+					++it;
+				else
+					it = poolFilesInfo.erase(it);
+
+				if (it == poolFilesInfo.end())
+					it = poolFilesInfo.begin(); //rewind to the very start
+
+				if (it == st)
+					break; // everything got checked and we're back to the starting iterator
 			}
-			return false;
-		};
-
-		// can't spend too much time in this code, thus set the deadline and rely on
-		// random luck and sheer amount of invocations to eventually remove most if not all
-		// stale items from the pool cache
-		static constexpr int64_t MAX_POOL_VERIFICATION_TIME = 1 * 1000;
-		for (auto t0 = spring_now(), t1 = t0; (t1 - t0).toMilliSecsi() < MAX_POOL_VERIFICATION_TIME; t1 = spring_now()) {
-			// cleanup files that got deleted in the meantime
-
-			if (ExistenceTest(it))
-				++it;
-			else
-				it = poolFilesInfo.erase(it);
-
-			if (it == poolFilesInfo.end())
-				it = poolFilesInfo.begin(); //rewind to the very start
-
-			if (it == st)
-				break; // everything got checked and we're back to the starting iterator
 		}
 	}
 

@@ -1320,13 +1320,27 @@ void CArchiveScanner::WriteCacheData(const std::string& filename)
 					break;
 
 				// cleanup files that got deleted in the meantime
-				if (ExistenceTest(it))
+				if (ExistenceTest(it)) {
 					++it;
-				else
+				} else {
+					// erase invalidates the erased iterator. If we're erasing
+					// the loop's anchor, re-anchor to the successor so the
+					// `it == st` termination check below still works; otherwise
+					// st dangles and we'd burn the full deadline re-checking
+					// survivors.
+					const bool erasingStart = (it == st);
 					it = poolFilesInfo.erase(it);
+					if (erasingStart)
+						st = it;
+				}
 
 				if (it == poolFilesInfo.end())
 					it = poolFilesInfo.begin(); //rewind to the very start
+
+				// st may have been re-anchored to end() above; wrap it too so
+				// the comparison is meaningful.
+				if (st == poolFilesInfo.end())
+					st = poolFilesInfo.begin();
 
 				if (it == st)
 					break; // everything got checked and we're back to the starting iterator

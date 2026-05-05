@@ -1286,9 +1286,6 @@ void CArchiveScanner::WriteCacheData(const std::string& filename)
 		// against. Without this guard, ExistenceTest below returns false for
 		// every entry, the loop erases the entire cache, and the next
 		// iteration dereferences begin()==end() on the now-empty map.
-		// Regression originally introduced in PR #2078 ("Add deadline target
-		// for pool files scanning"), which replaced a naturally-terminating
-		// `it != end()` loop with a time-bounded wraparound loop.
 		if (!allPoolRootDirs.empty()) {
 			const uint32_t seed = std::chrono::system_clock::now().time_since_epoch().count();
 			std::mt19937 generator(seed);

@@ -1316,7 +1316,7 @@ void CArchiveScanner::WriteCacheData(const std::string& filename)
 				// Map can drain to empty mid-loop (e.g. all entries genuinely
 				// missing). begin() then equals end(); ExistenceTest(end())
 				// would dereference past the allocated buckets array.
-				if (poolFilesInfo.empty())
+				if (it == poolFilesInfo.end())
 					break;
 
 				// cleanup files that got deleted in the meantime

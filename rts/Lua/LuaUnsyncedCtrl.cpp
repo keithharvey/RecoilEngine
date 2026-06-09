@@ -1,6 +1,6 @@
 /* This file is part of the Spring engine (GPL v2 or later), see LICENSE.html */
 
-/*** @context unsynced */
+/*** @env unsynced */
 
 #include "LuaUnsyncedCtrl.h"
 
@@ -3804,7 +3804,7 @@ int LuaUnsyncedCtrl::SetBuildFacing(lua_State* L)
 
 /*** @function SpringUnsynced.SendLuaUIMsg
  * @param message string
- * @param mode string? "s"/"specs" | "a"/"allies"
+ * @param mode ("s"|"specs"|"a"|"allies")?
  * @return nil
  */
 int LuaUnsyncedCtrl::SendLuaUIMsg(lua_State* L)

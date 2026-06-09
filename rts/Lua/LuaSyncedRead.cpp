@@ -1,6 +1,6 @@
 /* This file is part of the Spring engine (GPL v2 or later), see LICENSE.html */
 
-/*** @context synced, unsynced */
+/*** @env synced, unsynced */
 
 #include "LuaSyncedRead.h"
 
@@ -8364,7 +8364,7 @@ int LuaSyncedRead::IsPosInAirLos(lua_State* L)
  * @function SpringShared.GetUnitLosState
  * @param unitID integer
  * @param allyTeamID integer?
- * @param raw false? (Default: `false`) Return a table.
+ * @param raw false? Return a bitmask.
  * @return table<"los"|"radar"|"typed",boolean>? los A table of LOS state names as keys and booleans as values, or `nil` if `unitID` is invalid.
  */
 int LuaSyncedRead::GetUnitLosState(lua_State* L)

@@ -3141,7 +3141,7 @@ int LuaSyncedCtrl::SetUnitMetalExtraction(lua_State* L)
  *
  * @function SpringSynced.SetUnitHarvestStorage
  * @param unitID integer
- * @param metal number?
+ * @param metal number? (Default: keeps the unit's current value)
  * @return nil
  */
 int LuaSyncedCtrl::SetUnitHarvestStorage(lua_State* L)
@@ -3547,7 +3547,6 @@ int LuaSyncedCtrl::SetUnitNeutral(lua_State* L)
  * @param enemyUnitID integer? when nil drops the units current target.
  * @param dgun boolean? (Default: `false`)
  * @param userTarget boolean? (Default: `false`)
- * @param dontForceTarget boolean?
  * @param weaponNum integer? (Default: `-1`)
  * @return boolean success
  */
@@ -3560,7 +3559,6 @@ int LuaSyncedCtrl::SetUnitNeutral(lua_State* L)
  * @param z number?
  * @param dgun boolean? (Default: `false`)
  * @param userTarget boolean? (Default: `false`)
- * @param dontForceTarget boolean?
  * @param weaponNum integer? (Default: `-1`)
  * @return boolean success
  */
@@ -7029,7 +7027,6 @@ int LuaSyncedCtrl::SetSmoothMesh(lua_State* L)
 /***
  * @function SpringSynced.SetSmoothMeshFunc
  * @param luaFunction function
- * @param arg any?
  * @param ... any?
  * @return number? absTotalHeightMapAmountChanged
  */

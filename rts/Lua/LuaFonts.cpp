@@ -572,14 +572,30 @@ static int SetTextColorShared(lua_State* L, bool outline)
 /*** Sets the RGBA color used when drawing text (fill).
  *
  * @function LuaFont:SetTextColor
- * @param color table Four-component RGBA array (`{r, g, b, a}`), or pass `r`, `g`, `b`, and optional `a` as separate numbers (requires at least three numeric components after the font).
+ * @param color rgba Text color
+ */
+/*** Sets the RGBA color used when drawing text (fill).
+ *
+ * @function LuaFont:SetTextColor
+ * @param r number Red
+ * @param g number Green
+ * @param b number Blue
+ * @param a number? Alpha
  */
 int LuaFonts::SetTextColor(lua_State* L) { return (SetTextColorShared(L, false)); }
 
 /*** Sets the RGBA color used for text outline when outline rendering is enabled.
  *
  * @function LuaFont:SetOutlineColor
- * @param color table Four-component RGBA array (`{r, g, b, a}`), or pass `r`, `g`, `b`, and optional `a` as separate numbers (requires at least three numeric components after the font).
+ * @param color rgba Outline color
+ */
+/*** Sets the RGBA color used for text outline when outline rendering is enabled.
+ *
+ * @function LuaFont:SetOutlineColor
+ * @param r number Red
+ * @param g number Green
+ * @param b number Blue
+ * @param a number? Alpha
  */
 int LuaFonts::SetOutlineColor(lua_State* L) { return (SetTextColorShared(L, true)); }
 

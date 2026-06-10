@@ -32,11 +32,11 @@ end
 --------------------------------------------------------------------------------
 
 -- Cached Spring functions
-local spGetSelectedUnits = SpringUnsynced.GetSelectedUnits
-local spGetAllIconDataArray = SpringUnsynced.GetAllIconDataArray
-local spGetUnitIcon = SpringUnsynced.GetUnitIcon
-local spSetUnitIcon = SpringUnsynced.SetUnitIcon
-local spEcho = SpringShared.Echo
+local spGetSelectedUnits = Engine.Unsynced.GetSelectedUnits
+local spGetAllIconDataArray = Engine.Unsynced.GetAllIconDataArray
+local spGetUnitIcon = Engine.Unsynced.GetUnitIcon
+local spSetUnitIcon = Engine.Unsynced.SetUnitIcon
+local spEcho = Engine.Shared.Echo
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------

@@ -6,9 +6,9 @@
 #include "LuaInclude.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Spring API context — split-tables-as-primary model
+// Engine API context — split-tables-as-primary model
 //
-// The Spring API is partitioned into three disjoint sub-tables of the `Engine`
+// The engine API is partitioned into three disjoint sub-tables of the `Engine`
 // namespace, with each binding declaring its bucket explicitly via its
 // `@function` table prefix:
 //
@@ -47,7 +47,7 @@
 //     only defined if X is actually synced-bucket; out-of-bucket access is a
 //     real nil-deref at runtime, not just a static type-check failure.
 //   * Future engine additions (new `REGISTER_LUA_CFUNC` in `LuaSyncedCtrl.cpp`)
-//     are classified by the `@function SpringBucket.Name` prefix on their doc
+//     are classified by the `@function Engine.<Bucket>.Name` prefix on their doc
 //     block — one source of truth, no hand-mapping, no drift possible.
 //
 // Cross-references:

@@ -34,21 +34,21 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-local modOptions = SpringShared.GetModOptions()
+local modOptions = Engine.Shared.GetModOptions()
 
 
 local function GetStartUnit(teamID)
 	-- get the team startup info
-	local side = select(5, SpringShared.GetTeamInfo(teamID))
+	local side = select(5, Engine.Shared.GetTeamInfo(teamID))
 	local startUnit
 	if (side == "") then
 		-- startscript didn't specify a side for this team
-		local sidedata = SpringShared.GetSideData()
+		local sidedata = Engine.Shared.GetSideData()
 		if (sidedata and #sidedata > 0) then
 			startUnit = sidedata[1 + teamID % #sidedata].startUnit
 		end
 	else
-		startUnit = SpringShared.GetSideData(side)
+		startUnit = Engine.Shared.GetSideData(side)
 	end
 	return startUnit
 end
@@ -57,19 +57,19 @@ local function SpawnStartUnit(teamID)
 	local startUnit = GetStartUnit(teamID)
 	if (startUnit and startUnit ~= "") then
 		-- spawn the specified start unit
-		local x,y,z = SpringShared.GetTeamStartPosition(teamID)
+		local x,y,z = Engine.Shared.GetTeamStartPosition(teamID)
 		-- snap to 16x16 grid
 		x, z = 16*math.floor((x+8)/16), 16*math.floor((z+8)/16)
-		y = SpringShared.GetGroundHeight(x, z)
+		y = Engine.Shared.GetGroundHeight(x, z)
 		-- facing toward map center
 		local facing=math.abs(Game.mapSizeX/2 - x) > math.abs(Game.mapSizeZ/2 - z)
 			and ((x>Game.mapSizeX/2) and "west" or "east")
 			or ((z>Game.mapSizeZ/2) and "north" or "south")
-		local unitID = SpringSynced.CreateUnit(startUnit, x, y, z, facing, teamID)
+		local unitID = Engine.Synced.CreateUnit(startUnit, x, y, z, facing, teamID)
 	end
 
 	-- set start resources, either from mod options or custom team keys
-	local teamOptions = select(8, SpringShared.GetTeamInfo(teamID))
+	local teamOptions = select(8, Engine.Shared.GetTeamInfo(teamID))
 	local m = teamOptions.startmetal  or modOptions.startmetal  or 1000
 	local e = teamOptions.startenergy or modOptions.startenergy or 1000
 
@@ -79,30 +79,30 @@ local function SpawnStartUnit(teamID)
 		-- remove the pre-existing storage
 		--   must be done after the start unit is spawned,
 		--   otherwise the starting resources are lost!
-		SpringSynced.SetTeamResource(teamID, "ms", tonumber(m))
-		SpringSynced.SetTeamResource(teamID, "m", 0)
-		SpringSynced.AddTeamResource(teamID, "m", tonumber(m))
+		Engine.Synced.SetTeamResource(teamID, "ms", tonumber(m))
+		Engine.Synced.SetTeamResource(teamID, "m", 0)
+		Engine.Synced.AddTeamResource(teamID, "m", tonumber(m))
 	end
 	if (e and tonumber(e) ~= 0) then
 		-- remove the pre-existing storage
 		--   must be done after the start unit is spawned,
 		--   otherwise the starting resources are lost!
-		SpringSynced.SetTeamResource(teamID, "es", tonumber(e))
-		SpringSynced.SetTeamResource(teamID, "e", 0)
-		SpringSynced.AddTeamResource(teamID, "e", tonumber(e))
+		Engine.Synced.SetTeamResource(teamID, "es", tonumber(e))
+		Engine.Synced.SetTeamResource(teamID, "e", 0)
+		Engine.Synced.AddTeamResource(teamID, "e", tonumber(e))
 	end
 end
 
 
 function gadget:GameStart()
 	-- only activate if engine didn't already spawn units (compatibility)
-	if (#SpringShared.GetAllUnits() > 0) then
+	if (#Engine.Shared.GetAllUnits() > 0) then
 		return
 	end
 
 	-- spawn start units
-	local gaiaTeamID = SpringShared.GetGaiaTeamID()
-	local teams = SpringShared.GetTeamList()
+	local gaiaTeamID = Engine.Shared.GetGaiaTeamID()
+	local teams = Engine.Shared.GetTeamList()
 	for i = 1,#teams do
 		local teamID = teams[i]
 		-- don't spawn a start unit for the Gaia team

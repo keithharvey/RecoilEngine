@@ -17,7 +17,7 @@ class Member
 
   @@known_templates = Set.new(@@templates.keys)
 
-  @@top_level = Set.new(["Spring", "SpringShared", "SpringSynced", "SpringUnsynced", "Callins", "SyncedCallins", "UnsyncedCallins", "gl", "GL", "RmlUi"])
+  @@top_level = Set.new(["Spring", "Engine", "Callins", "SyncedCallins", "UnsyncedCallins", "gl", "GL", "RmlUi"])
 
   def initialize(attributes, parent = nil)
     super(attributes)
@@ -239,7 +239,7 @@ class Member
 end
 
 class Generator
-  @@top_level = ["Spring", "SpringShared", "SpringSynced", "SpringUnsynced", "Callins", "SyncedCallins", "UnsyncedCallins", "gl", "GL", "RmlUi"]
+  @@top_level = ["Spring", "Engine", "Callins", "SyncedCallins", "UnsyncedCallins", "gl", "GL", "RmlUi"]
     .each_with_index
     .reduce({}) {|acc, (el, i)| acc[el] = i + 1; acc }
 

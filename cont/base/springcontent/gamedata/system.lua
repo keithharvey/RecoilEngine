@@ -78,9 +78,7 @@ local system = {
   Encoding = Encoding,
   VFS = VFS,
   Spring = Spring,
-  SpringShared = SpringShared,
-  SpringSynced = SpringSynced,
-  SpringUnsynced = SpringUnsynced,
+  Engine = Engine,
 
   --  Custom functions
   lowerkeys = lowerkeys,

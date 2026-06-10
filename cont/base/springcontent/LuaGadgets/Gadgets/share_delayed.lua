@@ -90,11 +90,11 @@ local cancelShareCmdDesc = {
 
 local function AllowAction(playerID)
   if (playerID ~= 0) then
-    SpringUnsynced.SendMessageToPlayer(playerID, "Must be the host player")
+    Engine.Unsynced.SendMessageToPlayer(playerID, "Must be the host player")
     return false
   end
-  if (not SpringShared.IsCheatingEnabled()) then
-    SpringUnsynced.SendMessageToPlayer(playerID, "Cheating must be enabled")
+  if (not Engine.Shared.IsCheatingEnabled()) then
+    Engine.Unsynced.SendMessageToPlayer(playerID, "Cheating must be enabled")
     return false
   end
   return true
@@ -103,7 +103,7 @@ end
 
 local function ChatControl(cmd, line, words, playerID)
   if (not AllowAction(playerID)) then
-    SpringShared.Echo('delayed sharing is ' .. (enabled and 'enabled' or 'disabled'))
+    Engine.Shared.Echo('delayed sharing is ' .. (enabled and 'enabled' or 'disabled'))
     return true
   end
   if (#words == 0) then
@@ -111,13 +111,13 @@ local function ChatControl(cmd, line, words, playerID)
   else
     enabled = (words[1] == '1')
   end
-  SpringShared.Echo('delayed sharing is ' .. (enabled and 'enabled' or 'disabled'))
+  Engine.Shared.Echo('delayed sharing is ' .. (enabled and 'enabled' or 'disabled'))
   return true
 end
 
 
 local function StopShare(cmd, line, words, playerID)
-  local _,_,_,teamID = SpringShared.GetPlayerInfo(playerID)
+  local _,_,_,teamID = Engine.Shared.GetPlayerInfo(playerID)
   local team = teamID and teams[teamID] or nil
   if (team) then
     for _,data in pairs(team) do
@@ -125,9 +125,9 @@ local function StopShare(cmd, line, words, playerID)
       frames[data.unitID] = nil
     end
     teams[teamID] = nil
-    SpringShared.Echo('cancelled remaining unit transfers')
+    Engine.Shared.Echo('cancelled remaining unit transfers')
   else
-    SpringShared.Echo('there are no unit transfers to cancel')
+    Engine.Shared.Echo('there are no unit transfers to cancel')
   end
   return true
 end
@@ -160,10 +160,10 @@ function gadget:Shutdown()
   gadgetHandler:RemoveChatAction("stopshare")
   Script.RemoveActionFallback("stopshare")
 
-  for _,unitID in ipairs(SpringShared.GetAllUnits()) do
-    local cmdDescID = SpringShared.FindUnitCmdDesc(unitID, CMD_CANCEL_SHARE)
+  for _,unitID in ipairs(Engine.Shared.GetAllUnits()) do
+    local cmdDescID = Engine.Shared.FindUnitCmdDesc(unitID, CMD_CANCEL_SHARE)
     if (cmdDescID) then
-      SpringSynced.RemoveUnitCmdDesc(unitID, cmdDescID)
+      Engine.Synced.RemoveUnitCmdDesc(unitID, cmdDescID)
     end
   end
 end
@@ -195,14 +195,14 @@ local function InsertShare(unitID, oldTeam, newTeam, delay)
   else
     team = {}
     teams[oldTeam] = team
-    shareInfo.frame = SpringShared.GetGameFrame() + delay
+    shareInfo.frame = Engine.Shared.GetGameFrame() + delay
   end
 
   insert(team, shareInfo)
   shares[unitID] = oldTeam
   frames[unitID] = shareInfo.frame
 
-  SpringSynced.InsertUnitCmdDesc(unitID, 1, cancelShareCmdDesc)
+  Engine.Synced.InsertUnitCmdDesc(unitID, 1, cancelShareCmdDesc)
 end
 
 
@@ -221,9 +221,9 @@ local function RemoveShare(unitID)
   shares[unitID] = nil
   frames[unitID] = nil
 
-  local cmdDescID = SpringShared.FindUnitCmdDesc(unitID, CMD_CANCEL_SHARE)
+  local cmdDescID = Engine.Shared.FindUnitCmdDesc(unitID, CMD_CANCEL_SHARE)
   if (cmdDescID) then
-    SpringSynced.RemoveUnitCmdDesc(unitID, cmdDescID)
+    Engine.Synced.RemoveUnitCmdDesc(unitID, cmdDescID)
   end
 
   local team = teams[oldTeam]
@@ -251,7 +251,7 @@ local function RemoveShare(unitID)
     if (index ~= 1) then
       RecalcDelays(team)
     else
-      local nowFrame = SpringShared.GetGameFrame()
+      local nowFrame = Engine.Shared.GetGameFrame()
       if (shareInfo.frame > nowFrame) then
         local front = team[1]
         front.frame = nowFrame + front.delay
@@ -306,12 +306,12 @@ function gadget:GameFrame(frameNum)
         break  -- front is not yet ready to be shared
       end
 
-      local curTeam = SpringShared.GetUnitTeam(front.unitID)
+      local curTeam = Engine.Shared.GetUnitTeam(front.unitID)
       if (curTeam and (curTeam == front.oldTeam)) then
         -- FIXME: see if newTeam is alive
         local tmp = AllowUnitTransfer
         AllowUnitTransfer = function() return true end
-        SpringSynced.TransferUnit(front.unitID, front.newTeam)
+        Engine.Synced.TransferUnit(front.unitID, front.newTeam)
         AllowUnitTransfer = tmp
       end
 
@@ -366,12 +366,12 @@ function gadget:Shutdown()
 end
 
 
-local GetGameFrame		   = SpringShared.GetGameFrame
-local GetUnitPosition    = SpringShared.GetUnitPosition
-local GetUnitAllyTeam    = SpringShared.GetUnitAllyTeam
-local GetLocalAllyTeamID = SpringUnsynced.GetLocalAllyTeamID
-local AddWorldIcon       = SpringUnsynced.AddWorldIcon
-local AddWorldText       = SpringUnsynced.AddWorldText
+local GetGameFrame		   = Engine.Shared.GetGameFrame
+local GetUnitPosition    = Engine.Shared.GetUnitPosition
+local GetUnitAllyTeam    = Engine.Shared.GetUnitAllyTeam
+local GetLocalAllyTeamID = Engine.Unsynced.GetLocalAllyTeamID
+local AddWorldIcon       = Engine.Unsynced.AddWorldIcon
+local AddWorldText       = Engine.Unsynced.AddWorldText
 
 function gadget:DrawWorld()
   local frames = SYNCED.shareFrames

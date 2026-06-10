@@ -1,9 +1,9 @@
 local Spring = Spring
-local alwaysColor, losColor, radarColor, jamColor, radarColor2 = SpringUnsynced.GetLosViewColors()
+local alwaysColor, losColor, radarColor, jamColor, radarColor2 = Engine.Unsynced.GetLosViewColors()
 
 return {
 	definitions = {
-		SpringUnsynced.GetConfigInt("HighResInfoTexture") and "#define HIGH_QUALITY" or "",
+		Engine.Unsynced.GetConfigInt("HighResInfoTexture") and "#define HIGH_QUALITY" or "",
 	},
 	vertex = [[
 	#version 130

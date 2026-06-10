@@ -1,7 +1,7 @@
 if (gadgetHandler:IsSyncedCode()) then
 
-		local GetAllFeatures     = SpringShared.GetAllFeatures
-		local GetFeatureAllyTeam = SpringShared.GetFeatureAllyTeam
+		local GetAllFeatures     = Engine.Shared.GetAllFeatures
+		local GetFeatureAllyTeam = Engine.Shared.GetFeatureAllyTeam
 
 		function gadget:Initialize()
 		end
@@ -48,32 +48,32 @@ else
 		local m_max    = math.max
 		local m_bit_or = math.bit_or
 
-		local Echo               = SpringShared.Echo
-		local GetConfigInt       = SpringUnsynced.GetConfigInt
-		local SetConfigInt       = SpringUnsynced.SetConfigInt
-		local GetCameraPosition  = SpringUnsynced.GetCameraPosition
-		local SetUnitLuaDraw     = SpringUnsynced.UnitRendering.SetUnitLuaDraw
-		local SetFeatureLuaDraw  = SpringUnsynced.UnitRendering.SetFeatureLuaDraw
-		local GetUnitPosition    = SpringShared.GetUnitPosition
-		local GetFeaturePosition = SpringShared.GetFeaturePosition
-		local GetUnitVelocity    = SpringShared.GetUnitVelocity
-		local GetFrameTimeOffset = SpringUnsynced.GetFrameTimeOffset
-		local GetUnitTeam        = SpringShared.GetUnitTeam
-		local GetUnitAllyTeam    = SpringShared.GetUnitAllyTeam
-		local GetLocalTeamID     = SpringUnsynced.GetLocalTeamID
-		local GetMyAllyTeamID    = SpringUnsynced.GetMyAllyTeamID
-		local GetSpectatingState = SpringUnsynced.GetSpectatingState
+		local Echo               = Engine.Shared.Echo
+		local GetConfigInt       = Engine.Unsynced.GetConfigInt
+		local SetConfigInt       = Engine.Unsynced.SetConfigInt
+		local GetCameraPosition  = Engine.Unsynced.GetCameraPosition
+		local SetUnitLuaDraw     = Engine.Unsynced.UnitRendering.SetUnitLuaDraw
+		local SetFeatureLuaDraw  = Engine.Unsynced.UnitRendering.SetFeatureLuaDraw
+		local GetUnitPosition    = Engine.Shared.GetUnitPosition
+		local GetFeaturePosition = Engine.Shared.GetFeaturePosition
+		local GetUnitVelocity    = Engine.Shared.GetUnitVelocity
+		local GetFrameTimeOffset = Engine.Unsynced.GetFrameTimeOffset
+		local GetUnitTeam        = Engine.Shared.GetUnitTeam
+		local GetUnitAllyTeam    = Engine.Shared.GetUnitAllyTeam
+		local GetLocalTeamID     = Engine.Unsynced.GetLocalTeamID
+		local GetMyAllyTeamID    = Engine.Unsynced.GetMyAllyTeamID
+		local GetSpectatingState = Engine.Unsynced.GetSpectatingState
 
-		local GetUnitDefID        = SpringShared.GetUnitDefID
-		local GetUnitHealth       = SpringShared.GetUnitHealth
-		local GetUnitExperience   = SpringShared.GetUnitExperience
-		local GetUnitIsStunned    = SpringShared.GetUnitIsStunned
-		local GetUnitStockpile    = SpringShared.GetUnitStockpile
-		local GetUnitGroup        = SpringUnsynced.GetUnitGroup
-		local GetUnitHeight       = SpringShared.GetUnitHeight
-		local GetFeatureHeight    = SpringShared.GetFeatureHeight
-		local GetFeatureResources = SpringShared.GetFeatureResources
-		local GetFeatureHealth    = SpringShared.GetFeatureHealth
+		local GetUnitDefID        = Engine.Shared.GetUnitDefID
+		local GetUnitHealth       = Engine.Shared.GetUnitHealth
+		local GetUnitExperience   = Engine.Shared.GetUnitExperience
+		local GetUnitIsStunned    = Engine.Shared.GetUnitIsStunned
+		local GetUnitStockpile    = Engine.Shared.GetUnitStockpile
+		local GetUnitGroup        = Engine.Unsynced.GetUnitGroup
+		local GetUnitHeight       = Engine.Shared.GetUnitHeight
+		local GetFeatureHeight    = Engine.Shared.GetFeatureHeight
+		local GetFeatureResources = Engine.Shared.GetFeatureResources
+		local GetFeatureHealth    = Engine.Shared.GetFeatureHealth
 
 		local glPushMatrix   = gl.PushMatrix
 		local glPopMatrix    = gl.PopMatrix
@@ -249,7 +249,7 @@ else
 				gadgetHandler:AddSyncAction(funcName, func, "")
 			end
 
-			SpringUnsynced.SendCommands({"showhealthbars 0", "showrezbars 0"})
+			Engine.Unsynced.SendCommands({"showhealthbars 0", "showrezbars 0"})
 		end
 
 		function gadget:Shutdown()

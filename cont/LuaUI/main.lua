@@ -11,7 +11,7 @@
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-SpringUnsynced.SendCommands({"ctrlpanel " .. LUAUI_DIRNAME .. "ctrlpanel.txt"})
+Engine.Unsynced.SendCommands({"ctrlpanel " .. LUAUI_DIRNAME .. "ctrlpanel.txt"})
 
 VFS.Include(LUAUI_DIRNAME .. "rml_setup.lua",  nil, VFS.ZIP)
 VFS.Include(LUAUI_DIRNAME .. 'utils.lua', nil, VFS.ZIP)
@@ -41,7 +41,7 @@ do
   if (RestartCount > 0) then
     restartStr = "  (" .. RestartCount .. " Restarts)"
   end
-  SpringUnsynced.SendCommands({"echo " .. LUAUI_VERSION .. restartStr})
+  Engine.Unsynced.SendCommands({"echo " .. LUAUI_VERSION .. restartStr})
 end
 
 
@@ -52,7 +52,7 @@ end
 --
 
 function Say(msg)
-  SpringUnsynced.SendCommands({'say ' .. msg})
+  Engine.Unsynced.SendCommands({'say ' .. msg})
 end
 
 
@@ -68,11 +68,11 @@ forceLayout = true
 
 
 function Update(dt)
-  dt = dt or SpringUnsynced.GetLastUpdateSeconds()
+  dt = dt or Engine.Unsynced.GetLastUpdateSeconds()
 
-  local currentPage = SpringUnsynced.GetActivePage()
+  local currentPage = Engine.Unsynced.GetActivePage()
   if (forceLayout or (currentPage ~= activePage)) then
-    SpringUnsynced.ForceLayoutUpdate()  --  for the page number indicator
+    Engine.Unsynced.ForceLayoutUpdate()  --  for the page number indicator
     forceLayout = false
   end
   activePage = currentPage

@@ -28,11 +28,11 @@ end
 
 local function AllowAction(playerID)
   if (playerID ~= 0) then
-    SpringUnsynced.SendMessageToPlayer(playerID, "Must be the host player")
+    Engine.Unsynced.SendMessageToPlayer(playerID, "Must be the host player")
     return false
   end
-  if (not SpringShared.IsCheatingEnabled()) then
-    SpringUnsynced.SendMessageToPlayer(playerID, "Cheating must be enabled")
+  if (not Engine.Shared.IsCheatingEnabled()) then
+    Engine.Unsynced.SendMessageToPlayer(playerID, "Cheating must be enabled")
     return false
   end
   return true
@@ -57,7 +57,7 @@ local function EchoCmd(cmd, line, words, playerID)
   end
   local chunk, err = loadstring("return " .. line, "echo", _G)
   if (chunk) then
-    SpringShared.Echo(chunk())
+    Engine.Shared.Echo(chunk())
   end
   return true
 end

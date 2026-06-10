@@ -12,14 +12,14 @@ function widget:GetInfo()
 end
    
 function widget:MousePress(mx, my, button)
-   local alt,ctrl,meta,shift = SpringUnsynced.GetModKeyState()
-   -- SpringShared.Echo("Button pressed: " .. button)
+   local alt,ctrl,meta,shift = Engine.Unsynced.GetModKeyState()
+   -- Engine.Shared.Echo("Button pressed: " .. button)
    if (button == 4) then
-      -- SpringUnsynced.SetActiveCommand("selfd")
-       SpringUnsynced.SendCommands("buildspacing inc")
+      -- Engine.Unsynced.SetActiveCommand("selfd")
+       Engine.Unsynced.SendCommands("buildspacing inc")
       return true
    elseif (button == 5) then
-       SpringUnsynced.SendCommands("buildspacing dec")
+       Engine.Unsynced.SendCommands("buildspacing dec")
       return true
    end
    return false

@@ -21,7 +21,7 @@
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-if (not SpringShared.GetMapOptions) then
+if (not Engine.Shared.GetMapOptions) then
   return function (mapInfo)
     -- map options not available (unitsync),
     -- no need to modify the mapInfo table
@@ -32,7 +32,7 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-local mapOptions = SpringShared.GetMapOptions()
+local mapOptions = Engine.Shared.GetMapOptions()
 
 
 --------------------------------------------------------------------------------

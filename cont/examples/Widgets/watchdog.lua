@@ -14,10 +14,10 @@ local i=0
 local function hook(event)
 	i = i + 1
 	if ((i % (10^7)) < 1) then
-		SpringShared.Echo("[Watchdog] Hang detected:")
+		Engine.Shared.Echo("[Watchdog] Hang detected:")
 		i = 0
-		SpringShared.Echo(SpringShared.GetGameFrame(), event, debug.getinfo(2).name)
-		SpringShared.Echo(debug.traceback())
+		Engine.Shared.Echo(Engine.Shared.GetGameFrame(), event, debug.getinfo(2).name)
+		Engine.Shared.Echo(debug.traceback())
 	end
 end
 

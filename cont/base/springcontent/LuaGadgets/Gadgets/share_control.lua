@@ -48,11 +48,11 @@ local lastRefusals = {}
 
 local function AllowAction(playerID)
   if (playerID ~= 0) then
-    SpringUnsynced.SendMessageToPlayer(playerID, "Must be the host player")
+    Engine.Unsynced.SendMessageToPlayer(playerID, "Must be the host player")
     return false
   end
-  if (not SpringShared.IsCheatingEnabled()) then
-    SpringUnsynced.SendMessageToPlayer(playerID, "Cheating must be enabled")
+  if (not Engine.Shared.IsCheatingEnabled()) then
+    Engine.Unsynced.SendMessageToPlayer(playerID, "Cheating must be enabled")
     return false
   end
   return true
@@ -60,13 +60,13 @@ end
 
 
 local function PrintState()
-  SpringShared.Echo('sharing units is '
+  Engine.Shared.Echo('sharing units is '
               .. (unitShare and 'enabled' or 'disabled'))
-  SpringShared.Echo('sharing resources is '
+  Engine.Shared.Echo('sharing resources is '
               .. (resShare and 'enabled' or 'disabled'))
-  SpringShared.Echo('sharing units with enemies is '
+  Engine.Shared.Echo('sharing units with enemies is '
               .. (unitShare and unitShareEnemy and 'enabled' or 'disabled'))
-  SpringShared.Echo('sharing resources with enemies is '
+  Engine.Shared.Echo('sharing resources with enemies is '
               .. (resShare and resShareEnemy and 'enabled' or 'disabled'))
   return true
 end
@@ -190,24 +190,24 @@ end
 
 function gadget:AllowResourceTransfer(oldTeam, newTeam, type, amount)
   if (resShare) then
-    if (resShareEnemy or SpringShared.AreTeamsAllied(oldTeam, newTeam)) then
+    if (resShareEnemy or Engine.Shared.AreTeamsAllied(oldTeam, newTeam)) then
       return true
     else
-      SpringUnsynced.SendMessageToTeam(oldTeam, "Can not give resources to enemies")
+      Engine.Unsynced.SendMessageToTeam(oldTeam, "Can not give resources to enemies")
     end
   else
-    SpringUnsynced.SendMessageToTeam(oldTeam, "Resource sharing has been disabled")
+    Engine.Unsynced.SendMessageToTeam(oldTeam, "Resource sharing has been disabled")
   end
   return false
 end
 
 
 local function AddRefusal(team, msg)
-  local frameNum = SpringShared.GetGameFrame()
+  local frameNum = Engine.Shared.GetGameFrame()
   local lastRefusal = lastRefusals[team]
   if ((not lastRefusal) or (lastRefusal ~= frameNum)) then
     lastRefusals[team] = frameNum
-    SpringUnsynced.SendMessageToTeam(team, msg)
+    Engine.Unsynced.SendMessageToTeam(team, msg)
   end
 end
 
@@ -217,7 +217,7 @@ function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, capture)
     return true
   end
 
-  if (SpringShared.IsCheatingEnabled()) then
+  if (Engine.Shared.IsCheatingEnabled()) then
     return true
   end
 
@@ -226,7 +226,7 @@ function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, capture)
     return false
   end
     
-  if (unitShareEnemy or SpringShared.AreTeamsAllied(oldTeam, newTeam)) then
+  if (unitShareEnemy or Engine.Shared.AreTeamsAllied(oldTeam, newTeam)) then
     return true
   end
 

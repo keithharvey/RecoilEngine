@@ -23,7 +23,7 @@ Engine.Unsynced = {}
 ---@class Engine.Shared
 Engine.Shared = {}
 
---- Unified Spring API table combining all synced and unsynced functions.
+--- Unified `Spring` table combining all synced and unsynced functions.
 ---
 --- @deprecated Prefer `Engine.Synced`, `Engine.Unsynced`, or `Engine.Shared`
 --- — the namespaced forms give accurate context-aware type checking. `Spring`

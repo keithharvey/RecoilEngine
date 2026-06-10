@@ -31,7 +31,7 @@ if (not gadgetHandler:IsSyncedCode()) then
 	return false
 end
 
-local modOptions = SpringShared.GetModOptions()
+local modOptions = Engine.Shared.GetModOptions()
 
 -- teamDeathMode possible values: "none", "teamzerounits" , "allyzerounits"
 local teamDeathMode = modOptions.teamdeathmode or "allyzerounits"
@@ -46,17 +46,17 @@ local ignoreGaia = tonumber(modOptions.ignoregaiawinner) or 1
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-local KillTeam = SpringSynced.KillTeam
-local GetAllyTeamList = SpringShared.GetAllyTeamList
-local GetTeamList = SpringShared.GetTeamList
-local GetPlayerInfo = SpringShared.GetPlayerInfo
-local GetPlayerList = SpringShared.GetPlayerList
-local GetTeamInfo = SpringShared.GetTeamInfo
-local GetTeamUnitCount = SpringShared.GetTeamUnitCount
-local GetAIInfo = SpringShared.GetAIInfo
-local GetTeamLuaAI = SpringShared.GetTeamLuaAI
-local GameOver = SpringSynced.GameOver
-local AreTeamsAllied = SpringShared.AreTeamsAllied
+local KillTeam = Engine.Synced.KillTeam
+local GetAllyTeamList = Engine.Shared.GetAllyTeamList
+local GetTeamList = Engine.Shared.GetTeamList
+local GetPlayerInfo = Engine.Shared.GetPlayerInfo
+local GetPlayerList = Engine.Shared.GetPlayerList
+local GetTeamInfo = Engine.Shared.GetTeamInfo
+local GetTeamUnitCount = Engine.Shared.GetTeamUnitCount
+local GetAIInfo = Engine.Shared.GetAIInfo
+local GetTeamLuaAI = Engine.Shared.GetTeamLuaAI
+local GameOver = Engine.Synced.GameOver
+local AreTeamsAllied = Engine.Shared.AreTeamsAllied
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ function gadget:Initialize()
 		return
 	end
 	
-	local gaiaTeamID = SpringShared.GetGaiaTeamID()
+	local gaiaTeamID = Engine.Shared.GetGaiaTeamID()
 	local teamCount = 0
 	for _,teamID in ipairs(GetTeamList()) do
 		if ignoreGaia ~= 1 or teamID ~= gaiaTeamID then

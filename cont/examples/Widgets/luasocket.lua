@@ -1,6 +1,6 @@
 
-if not (SpringUnsynced.GetConfigInt("LuaSocketEnabled", 0) == 1) then
-	SpringShared.Echo("LuaSocketEnabled is disabled")
+if not (Engine.Unsynced.GetConfigInt("LuaSocketEnabled", 0) == 1) then
+	Engine.Shared.Echo("LuaSocketEnabled is disabled")
 	return false
 end
 
@@ -29,7 +29,7 @@ local file = "/dl/buildbot/default/master/LATEST"
 local function dumpConfig()
 	-- dump all luasocket related config settings to console
 	for _, conf in ipairs({"TCPAllowConnect", "TCPAllowListen", "UDPAllowConnect", "UDPAllowListen"  }) do
-		SpringShared.Echo(conf .. " = " .. SpringUnsynced.GetConfigString(conf, ""))
+		Engine.Shared.Echo(conf .. " = " .. Engine.Unsynced.GetConfigString(conf, ""))
 	end
 
 end
@@ -65,7 +65,7 @@ local function SocketConnect(host, port)
 	client:settimeout(0)
 	res, err = client:connect(host, port)
 	if not res and not res=="timeout" then
-		SpringShared.Echo("Error in connect: "..err)
+		Engine.Shared.Echo("Error in connect: "..err)
 		return false
 	end
 	set = newset()
@@ -75,14 +75,14 @@ end
 
 function widget:Initialize()
 	dumpConfig()
-	--SpringShared.Echo(socket.dns.toip("localhost"))
+	--Engine.Shared.Echo(socket.dns.toip("localhost"))
 	--FIXME dns-request seems to block
 	SocketConnect(host, port)
 end
 
 -- called when data was received through a connection
 local function SocketDataReceived(sock, str)
-	SpringShared.Echo(str)
+	Engine.Shared.Echo(str)
 end
 
 local headersent
@@ -91,14 +91,14 @@ local function SocketWriteAble(sock)
 	if headersent==nil then
 		-- socket is writeable
 		headersent=1
-		SpringShared.Echo("sending http request")
+		Engine.Shared.Echo("sending http request")
 		sock:send("GET " .. file .. " HTTP/1.0\r\nHost: " .. host ..  " \r\n\r\n")
 	end
 end
 
 -- called when a connection is closed
 local function SocketClosed(sock)
-	SpringShared.Echo("closed connection")
+	Engine.Shared.Echo("closed connection")
 end
 
 function widget:Update()
@@ -113,7 +113,7 @@ function widget:Update()
 			-- nothing to do, return
 			return
 		end
-		SpringShared.Echo("Error in select: " .. error)
+		Engine.Shared.Echo("Error in select: " .. error)
 	end
 	for _, input in ipairs(readable) do
 		local s, status, partial = input:receive('*a') --try to read all data

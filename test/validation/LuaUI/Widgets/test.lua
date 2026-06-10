@@ -19,33 +19,33 @@ local unitsdestroyed = 0
 local maxruntime = 120 -- run at max 2 minutes
 
 local function ShowStats()
-	local time = SpringUnsynced.DiffTimers(SpringUnsynced.GetTimer(), timer)
-	local gameseconds = SpringShared.GetGameSeconds()
+	local time = Engine.Unsynced.DiffTimers(Engine.Unsynced.GetTimer(), timer)
+	local gameseconds = Engine.Shared.GetGameSeconds()
 	local speed = gameseconds / time
-	SpringShared.Echo("Test done:")
-	SpringShared.Echo(string.format("Realtime %is gametime: %is", time, gameseconds ))
-	SpringShared.Echo(string.format("Run at %.2fx real time", speed))
-	SpringShared.Echo(string.format("Units created: %i Units destroyed: %i", unitscreated, unitsdestroyed))
+	Engine.Shared.Echo("Test done:")
+	Engine.Shared.Echo(string.format("Realtime %is gametime: %is", time, gameseconds ))
+	Engine.Shared.Echo(string.format("Run at %.2fx real time", speed))
+	Engine.Shared.Echo(string.format("Units created: %i Units destroyed: %i", unitscreated, unitsdestroyed))
 	if unitscreated <= minunits or unitsdestroyed <= minunits then
-		SpringShared.Log("test.lua", LOG.ERROR, string.format("Fewer then minunits %i units were created/destroyed!", minunits))
+		Engine.Shared.Log("test.lua", LOG.ERROR, string.format("Fewer then minunits %i units were created/destroyed!", minunits))
 	end
 end
 
 function widget:GameOver()
-	SpringUnsynced.SendCommands("quitforce")
+	Engine.Unsynced.SendCommands("quitforce")
 	ShowStats()
 end
 
 function widget:Update()
-	if (SpringUnsynced.DiffTimers(SpringUnsynced.GetTimer(), timer)) > maxruntime then
-		SpringShared.Log("test.lua", LOG.WARNING, string.format("Tests run longer than %i seconds, aborting!", maxruntime ))
-		SpringUnsynced.SendCommands("pause 1", "quitforce")
+	if (Engine.Unsynced.DiffTimers(Engine.Unsynced.GetTimer(), timer)) > maxruntime then
+		Engine.Shared.Log("test.lua", LOG.WARNING, string.format("Tests run longer than %i seconds, aborting!", maxruntime ))
+		Engine.Unsynced.SendCommands("pause 1", "quitforce")
 	end
 end
 
 function widget:Initialize()
-	timer = SpringUnsynced.GetTimer()
-	SpringUnsynced.SendCommands("setmaxspeed " .. 1000,
+	timer = Engine.Unsynced.GetTimer()
+	Engine.Unsynced.SendCommands("setmaxspeed " .. 1000,
 		"setminspeed " .. initialspeed,
 		"setminspeed 1")
 end
@@ -53,7 +53,7 @@ end
 function widget:GameFrame(n)
 	if n==maxframes then
 		ShowStats()
-		SpringUnsynced.SendCommands("quitforce")
+		Engine.Unsynced.SendCommands("quitforce")
 	end
 end
 

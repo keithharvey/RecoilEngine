@@ -39,21 +39,21 @@ local glDrawListAtUnit       = gl.DrawListAtUnit
 local glLineWidth            = gl.LineWidth
 local glPolygonOffset        = gl.PolygonOffset
 local glVertex               = gl.Vertex
-local spDiffTimers           = SpringUnsynced.DiffTimers
-local spGetAllUnits          = SpringShared.GetAllUnits
-local spGetGroundNormal      = SpringShared.GetGroundNormal
-local spGetSelectedUnits     = SpringUnsynced.GetSelectedUnits
-local spGetTeamColor         = SpringUnsynced.GetTeamColor
-local spGetTimer             = SpringUnsynced.GetTimer
-local spGetUnitBasePosition  = SpringShared.GetUnitBasePosition
-local spGetUnitDefDimensions = SpringShared.GetUnitDefDimensions
-local spGetUnitDefID         = SpringShared.GetUnitDefID
-local spGetUnitRadius        = SpringShared.GetUnitRadius
-local spGetUnitTeam          = SpringShared.GetUnitTeam
-local spGetUnitViewPosition  = SpringUnsynced.GetUnitViewPosition
-local spIsUnitSelected       = SpringUnsynced.IsUnitSelected
-local spIsUnitVisible        = SpringUnsynced.IsUnitVisible
-local spSendCommands         = SpringUnsynced.SendCommands
+local spDiffTimers           = Engine.Unsynced.DiffTimers
+local spGetAllUnits          = Engine.Shared.GetAllUnits
+local spGetGroundNormal      = Engine.Shared.GetGroundNormal
+local spGetSelectedUnits     = Engine.Unsynced.GetSelectedUnits
+local spGetTeamColor         = Engine.Unsynced.GetTeamColor
+local spGetTimer             = Engine.Unsynced.GetTimer
+local spGetUnitBasePosition  = Engine.Shared.GetUnitBasePosition
+local spGetUnitDefDimensions = Engine.Shared.GetUnitDefDimensions
+local spGetUnitDefID         = Engine.Shared.GetUnitDefID
+local spGetUnitRadius        = Engine.Shared.GetUnitRadius
+local spGetUnitTeam          = Engine.Shared.GetUnitTeam
+local spGetUnitViewPosition  = Engine.Unsynced.GetUnitViewPosition
+local spIsUnitSelected       = Engine.Unsynced.IsUnitSelected
+local spIsUnitVisible        = Engine.Unsynced.IsUnitVisible
+local spSendCommands         = Engine.Unsynced.SendCommands
 
 
 --------------------------------------------------------------------------------

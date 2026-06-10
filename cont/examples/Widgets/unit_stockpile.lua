@@ -29,10 +29,10 @@ end
 
 function widget:UnitCreated(unitID, unitDefID, unitTeam)
   local ud = UnitDefs[unitDefID]
-  if ((ud ~= nil) and (unitTeam == SpringUnsynced.GetMyTeamID())) then
+  if ((ud ~= nil) and (unitTeam == Engine.Unsynced.GetMyTeamID())) then
     if (ud.canStockpile) then
       -- give stockpilers 100 units to build
-      SpringShared.GiveOrderToUnit(unitID, CMD.STOCKPILE, {}, { "ctrl", "shift" })
+      Engine.Shared.GiveOrderToUnit(unitID, CMD.STOCKPILE, {}, { "ctrl", "shift" })
     end
   end
 end

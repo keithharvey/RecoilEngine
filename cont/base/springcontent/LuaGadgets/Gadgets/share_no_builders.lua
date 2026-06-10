@@ -41,11 +41,11 @@ local lastRefusals = {}
 
 local function AllowAction(playerID)
   if (playerID ~= 0) then
-    SpringUnsynced.SendMessageToPlayer(playerID, "Must be the host player")
+    Engine.Unsynced.SendMessageToPlayer(playerID, "Must be the host player")
     return false
   end
-  if (not SpringShared.IsCheatingEnabled()) then
-    SpringUnsynced.SendMessageToPlayer(playerID, "Cheating must be enabled")
+  if (not Engine.Shared.IsCheatingEnabled()) then
+    Engine.Unsynced.SendMessageToPlayer(playerID, "Cheating must be enabled")
     return false
   end
   return true
@@ -53,13 +53,13 @@ end
 
 
 local function PrintState()
-  SpringShared.Echo('sharing buildersunits is '
+  Engine.Shared.Echo('sharing buildersunits is '
               .. (unitShare and 'enabled' or 'disabled'))
-  SpringShared.Echo('sharing resources is '
+  Engine.Shared.Echo('sharing resources is '
               .. (resShare and 'enabled' or 'disabled'))
-  SpringShared.Echo('sharing units with enemies is '
+  Engine.Shared.Echo('sharing units with enemies is '
               .. (unitShare and unitShareEnemy and 'enabled' or 'disabled'))
-  SpringShared.Echo('sharing resources with enemies is '
+  Engine.Shared.Echo('sharing resources with enemies is '
               .. (resShare and resShareEnemy and 'enabled' or 'disabled'))
   return true
 end
@@ -103,11 +103,11 @@ end
 
 
 local function AddRefusal(team, msg)
-  local frameNum = SpringShared.GetGameFrame()
+  local frameNum = Engine.Shared.GetGameFrame()
   local lastRefusal = lastRefusals[team]
   if ((not lastRefusal) or (lastRefusal ~= frameNum)) then
     lastRefusals[team] = frameNum
-    SpringUnsynced.SendMessageToTeam(team, msg)
+    Engine.Unsynced.SendMessageToTeam(team, msg)
   end
 end
 
@@ -117,9 +117,9 @@ end
 
 
 local function TeamCanBeTaken(teamID)
-  local players = SpringShared.GetPlayerList(teamID, true)
+  local players = Engine.Shared.GetPlayerList(teamID, true)
   for _, playerID in ipairs(players) do
-    local name, active, spec = SpringShared.GetPlayerInfo(playerID)
+    local name, active, spec = Engine.Shared.GetPlayerInfo(playerID)
     if (active or (not spec)) then
       return false
     end
@@ -129,9 +129,9 @@ end
 
 
 local function TeamHasNoBuilders(teamID)
-  local units = SpringShared.GetTeamUnits(teamID)
+  local units = Engine.Shared.GetTeamUnits(teamID)
   for _, unitID in ipairs(units) do
-    local ud = UnitDefs[SpringShared.GetUnitDefID(unitID)]
+    local ud = UnitDefs[Engine.Shared.GetUnitDefID(unitID)]
     if (ud and ud.builder) then
       return false
     end
@@ -145,7 +145,7 @@ function gadget:AllowUnitTransfer(unitID, unitDefID, oldTeam, newTeam, capture)
     return true
   end
 
-  if (SpringShared.IsCheatingEnabled()) then
+  if (Engine.Shared.IsCheatingEnabled()) then
     return true
   end
 

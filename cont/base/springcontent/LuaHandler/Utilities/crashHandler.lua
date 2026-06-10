@@ -32,8 +32,8 @@ local function HandleError(addon, funcName, status, ...)
 
 	local name = addon._info.name
 	local err  = select(1,...)
-	SpringShared.Log(LUA_NAME, "error", ('In %s(): %s'):format(funcName, tostring(err)))
-	SpringShared.Log(LUA_NAME, "error", ('Removed %s: %s'):format(handler.addonName, handler:GetFancyString(name)))
+	Engine.Shared.Log(LUA_NAME, "error", ('In %s(): %s'):format(funcName, tostring(err)))
+	Engine.Shared.Log(LUA_NAME, "error", ('Removed %s: %s'):format(handler.addonName, handler:GetFancyString(name)))
 	return nil
 end
 

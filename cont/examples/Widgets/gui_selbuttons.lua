@@ -60,17 +60,17 @@ local glTranslate              = gl.Translate
 local glUnitDef                = gl.UnitDef
 local glUnitShape              = gl.UnitShape
 local glVertex                 = gl.Vertex
-local spGetModKeyState         = SpringUnsynced.GetModKeyState
-local spGetMouseState          = SpringUnsynced.GetMouseState
-local spGetMyTeamID            = SpringUnsynced.GetMyTeamID
-local spGetSelectedUnits       = SpringUnsynced.GetSelectedUnits
-local spGetSelectedUnitsCounts = SpringUnsynced.GetSelectedUnitsCounts
-local spGetSelectedUnitsSorted = SpringUnsynced.GetSelectedUnitsSorted
-local spGetTeamUnitsSorted     = SpringShared.GetTeamUnitsSorted
-local spGetUnitDefDimensions   = SpringShared.GetUnitDefDimensions
-local spSelectUnitArray        = SpringUnsynced.SelectUnitArray
-local spSelectUnitMap          = SpringUnsynced.SelectUnitMap
-local spSendCommands           = SpringUnsynced.SendCommands
+local spGetModKeyState         = Engine.Unsynced.GetModKeyState
+local spGetMouseState          = Engine.Unsynced.GetMouseState
+local spGetMyTeamID            = Engine.Unsynced.GetMyTeamID
+local spGetSelectedUnits       = Engine.Unsynced.GetSelectedUnits
+local spGetSelectedUnitsCounts = Engine.Unsynced.GetSelectedUnitsCounts
+local spGetSelectedUnitsSorted = Engine.Unsynced.GetSelectedUnitsSorted
+local spGetTeamUnitsSorted     = Engine.Shared.GetTeamUnitsSorted
+local spGetUnitDefDimensions   = Engine.Shared.GetUnitDefDimensions
+local spSelectUnitArray        = Engine.Unsynced.SelectUnitArray
+local spSelectUnitMap          = Engine.Unsynced.SelectUnitMap
+local spSendCommands           = Engine.Unsynced.SendCommands
 
 
 -------------------------------------------------------------------------------

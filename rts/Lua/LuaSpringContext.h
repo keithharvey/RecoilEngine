@@ -8,26 +8,28 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Spring API context — split-tables-as-primary model
 //
-// The Spring API is partitioned into three disjoint tables, with each binding
-// declaring its bucket explicitly via its `@function` table prefix:
+// The Spring API is partitioned into three disjoint sub-tables of the `Engine`
+// namespace, with each binding declaring its bucket explicitly via its
+// `@function` table prefix:
 //
-//   * SpringShared   — reads valid in both contexts (e.g. `LuaSyncedRead`)
-//   * SpringSynced   — synced-only control           (e.g. `LuaSyncedCtrl`)
-//   * SpringUnsynced — unsynced-only                 (e.g. `LuaUnsynced{Ctrl,Read}`)
+//   * Engine.Shared   — reads valid in both contexts (e.g. `LuaSyncedRead`)
+//   * Engine.Synced   — synced-only control           (e.g. `LuaSyncedCtrl`)
+//   * Engine.Unsynced — unsynced-only                 (e.g. `LuaUnsynced{Ctrl,Read}`)
 //
 // Each handler (CSplitLuaHandle, LuaUI, LuaIntro, LuaMenu, LuaParser) pushes
-// entries directly into the correct split table via
-// `AddEntriesToTable(L, "SpringX", <PushEntries>)`. After all pushes are done,
-// `BuildSpringFromSplitTables` merges the per-context-appropriate subset of
-// the three split tables into `Spring` as a back-compat view so pre-split
-// callers still see `Spring.X`.
+// entries directly into the correct bucket via
+// `AddEntriesToTable(L, "Engine", "<Bucket>", <PushEntries>)`. After all pushes
+// are done, `BuildSpringFromSplitTables` merges the per-context-appropriate
+// subset of the three buckets into `Spring` as a back-compat view so pre-split
+// callers still see `Spring.X`. Engine constants (`Engine.version`, etc.) share
+// the same `Engine` table alongside the buckets.
 //
 // Per-context exposure (matches the function set each handler registers):
 //
-//   Context::Synced   merges  SpringShared + SpringSynced       into Spring
-//   Context::Unsynced merges  SpringShared + SpringUnsynced     into Spring
-//   Context::Both     merges  SpringShared + SpringSynced +
-//                             SpringUnsynced                    into Spring
+//   Context::Synced   merges  Engine.Shared + Engine.Synced       into Spring
+//   Context::Unsynced merges  Engine.Shared + Engine.Unsynced     into Spring
+//   Context::Both     merges  Engine.Shared + Engine.Synced +
+//                             Engine.Unsynced                    into Spring
 //
 // `Both` is for the synced half of `CSyncedLuaHandle`, which registers BOTH
 // `LuaSyncedCtrl::PushEntries` AND `LuaUnsyncedCtrl::PushEntries` (synced
@@ -41,7 +43,7 @@
 // an engine authoring bug — a function should live in exactly one bucket.
 //
 // Why split-as-primary instead of alias-to-Spring:
-//   * Runtime structure matches annotation structure — `SpringSynced.X` is
+//   * Runtime structure matches annotation structure — `Engine.Synced.X` is
 //     only defined if X is actually synced-bucket; out-of-bucket access is a
 //     real nil-deref at runtime, not just a static type-check failure.
 //   * Future engine additions (new `REGISTER_LUA_CFUNC` in `LuaSyncedCtrl.cpp`)
@@ -58,7 +60,7 @@ namespace LuaSpringContext {
 	enum class Context { Synced, Unsynced, Both };
 
 	// Creates a `Spring` table by eagerly merging the appropriate subset of
-	// `SpringShared` / `SpringSynced` / `SpringUnsynced` (populated by prior
+	// `Engine.Shared` / `Engine.Synced` / `Engine.Unsynced` (populated by prior
 	// `AddEntriesToTable` calls). Call AFTER all split-table pushes.
 	// Warns on key collisions across the merged tables.
 	void BuildSpringFromSplitTables(lua_State* L, Context ctx);

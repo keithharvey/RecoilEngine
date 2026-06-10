@@ -76,9 +76,9 @@ CLuaIntro::CLuaIntro()
 	// load the spring libraries
 	if (
 	    !AddCommonModules(L)						    ||
-	    !AddEntriesToTable(L, "SpringUnsynced", LoadUnsyncedCtrlFunctions)      ||
-	    !AddEntriesToTable(L, "SpringUnsynced", LoadUnsyncedReadFunctions)      ||
-	    !AddEntriesToTable(L, "SpringShared",   LoadSyncedReadFunctions  )      ||
+	    !AddEntriesToTable(L, "Engine", "Unsynced", LoadUnsyncedCtrlFunctions)      ||
+	    !AddEntriesToTable(L, "Engine", "Unsynced", LoadUnsyncedReadFunctions)      ||
+	    !AddEntriesToTable(L, "Engine", "Shared",   LoadSyncedReadFunctions  )      ||
 
 	    !AddEntriesToTable(L, "VFS",       LuaVFS::PushUnsynced)                ||
 	    !AddEntriesToTable(L, "VFS",       LuaZipFileReader::PushUnsynced)      ||

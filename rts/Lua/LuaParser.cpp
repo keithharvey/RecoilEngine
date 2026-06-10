@@ -151,14 +151,16 @@ void LuaParser::SetupEnv(bool isSyncedCtxt, bool isDefsParser)
 
 	AddFunc("DontMessWithMyCase", DontMessWithMyCase);
 
-	// Echo/Log/TimeCheck are universal utilities — land them in SpringShared
+	// Echo/Log/TimeCheck are universal utilities — land them in Engine.Shared
 	// so they're visible regardless of whether this parser is synced- or
 	// unsynced-context. BuildSpringFromSplitTables then mirrors them into
 	// Spring for back-compat.
-	GetTable("SpringShared");
+	GetTable("Engine");
+	GetTable("Shared");
 	AddFunc("Echo", LuaUtils::Echo);
 	AddFunc("Log", LuaUtils::Log);
 	AddFunc("TimeCheck", TimeCheck);
+	EndTable();
 	EndTable();
 
 	LuaSpringContext::BuildSpringFromSplitTables(L,
@@ -511,10 +513,10 @@ void LuaParser::AddString(int key, const std::string& value)
 /***
  * Time a function call's execution and log the duration with a label.
  *
- * Registered into `SpringShared` from `LuaParser::AddEntries` (and therefore
+ * Registered into `Engine.Shared` from `LuaParser::AddEntries` (and therefore
  * visible as `Spring.TimeCheck` via the back-compat merge).
  *
- * @function SpringShared.TimeCheck
+ * @function Engine.Shared.TimeCheck
  * @param label string Label to prepend to the logged duration
  * @param fn fun(...) Function to time
  * @param ... any Forwarded to `fn`

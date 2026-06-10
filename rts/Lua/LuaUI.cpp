@@ -126,10 +126,10 @@ CLuaUI::CLuaUI()
 	    !AddEntriesToTable(L, "FeatureDefs", LuaFeatureDefs::PushEntries)    ||
 	    !AddEntriesToTable(L, "Script",      LuaInterCall::PushEntriesLuaUI) ||
 	    !AddEntriesToTable(L, "Script",      LuaScream::PushEntries)         ||
-	    !AddEntriesToTable(L, "SpringShared",   LuaSyncedRead::PushEntries)   ||
-	    !AddEntriesToTable(L, "SpringUnsynced", LuaUnsyncedCtrl::PushEntries) ||
-	    !AddEntriesToTable(L, "SpringUnsynced", LuaUnsyncedRead::PushEntries) ||
-	    !AddEntriesToTable(L, "SpringShared",   LuaUICommand::PushEntries)    ||
+	    !AddEntriesToTable(L, "Engine", "Shared",   LuaSyncedRead::PushEntries)   ||
+	    !AddEntriesToTable(L, "Engine", "Unsynced", LuaUnsyncedCtrl::PushEntries) ||
+	    !AddEntriesToTable(L, "Engine", "Unsynced", LuaUnsyncedRead::PushEntries) ||
+	    !AddEntriesToTable(L, "Engine", "Shared",   LuaUICommand::PushEntries)    ||
 	    !AddEntriesToTable(L, "gl",          LuaOpenGL::PushEntries)         ||
 	    !AddEntriesToTable(L, "GL",          LuaConstGL::PushEntries)        ||
 	    !AddEntriesToTable(L, "Engine",      LuaConstEngine::PushEntries)    ||
@@ -695,7 +695,7 @@ bool CLuaUI::GetLuaCmdDescList(lua_State* L, int index, vector<SCommandDescripti
 //
 
 /***
- * @function SpringShared.SetShockFrontFactors
+ * @function Engine.Shared.SetShockFrontFactors
  * @param minArea number?
  * @param minPower number?
  * @param distAdj number?

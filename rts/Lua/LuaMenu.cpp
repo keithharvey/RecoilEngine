@@ -81,9 +81,9 @@ CLuaMenu::CLuaMenu()
 	// load the spring libraries
 	if (
 		!AddCommonModules(L)						   ||
-		!AddEntriesToTable(L, "SpringUnsynced", LoadUnsyncedCtrlFunctions) ||
-		!AddEntriesToTable(L, "SpringUnsynced", LoadUnsyncedReadFunctions) ||
-		!AddEntriesToTable(L, "SpringUnsynced", LoadLuaMenuFunctions)      ||
+		!AddEntriesToTable(L, "Engine", "Unsynced", LoadUnsyncedCtrlFunctions) ||
+		!AddEntriesToTable(L, "Engine", "Unsynced", LoadUnsyncedReadFunctions) ||
+		!AddEntriesToTable(L, "Engine", "Unsynced", LoadLuaMenuFunctions)      ||
 		!AddEntriesToTable(L, "Engine",    LuaConstEngine::PushEntries)    ||
 		!AddEntriesToTable(L, "Platform",  LuaConstPlatform::PushEntries)  ||
 		!AddEntriesToTable(L, "Script",    LuaScream::PushEntries)         ||

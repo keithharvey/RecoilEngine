@@ -127,10 +127,10 @@ bool CUnsyncedLuaHandle::Init(std::string code, const std::string& file)
 		if (!AddEntriesToTable(L, "FeatureDefs",   LuaFeatureDefs::PushEntries        )) KILL
 		if (!AddEntriesToTable(L, "Script",          LuaInterCall::PushEntriesUnsynced)) KILL
 		if (!AddEntriesToTable(L, "Script",             LuaScream::PushEntries        )) KILL
-		if (!AddEntriesToTable(L, "SpringShared",   LuaSyncedRead::PushEntries        )) KILL
-		if (!AddEntriesToTable(L, "SpringUnsynced", LuaUnsyncedCtrl::PushEntries      )) KILL
-		if (!AddEntriesToTable(L, "SpringUnsynced", LuaUnsyncedRead::PushEntries      )) KILL
-		if (!AddEntriesToTable(L, "SpringShared",   LuaUICommand::PushEntries         )) KILL
+		if (!AddEntriesToTable(L, "Engine", "Shared",   LuaSyncedRead::PushEntries        )) KILL
+		if (!AddEntriesToTable(L, "Engine", "Unsynced", LuaUnsyncedCtrl::PushEntries      )) KILL
+		if (!AddEntriesToTable(L, "Engine", "Unsynced", LuaUnsyncedRead::PushEntries      )) KILL
+		if (!AddEntriesToTable(L, "Engine", "Shared",   LuaUICommand::PushEntries         )) KILL
 		if (!AddEntriesToTable(L, "gl",                 LuaOpenGL::PushEntries        )) KILL
 		if (!AddEntriesToTable(L, "GL",                LuaConstGL::PushEntries        )) KILL
 		if (!AddEntriesToTable(L, "Engine",        LuaConstEngine::PushEntries        )) KILL
@@ -504,10 +504,10 @@ bool CSyncedLuaHandle::Init(std::string code, const std::string& file)
 		if (!AddEntriesToTable(L, "WeaponDefs",     LuaWeaponDefs::PushEntries      )) KILL
 		if (!AddEntriesToTable(L, "FeatureDefs",   LuaFeatureDefs::PushEntries      )) KILL
 		if (!AddEntriesToTable(L, "Script",          LuaInterCall::PushEntriesSynced)) KILL
-		if (!AddEntriesToTable(L, "SpringUnsynced", LuaUnsyncedCtrl::PushEntries    )) KILL
-		if (!AddEntriesToTable(L, "SpringSynced",   LuaSyncedCtrl::PushEntries      )) KILL
-		if (!AddEntriesToTable(L, "SpringShared",   LuaSyncedRead::PushEntries      )) KILL
-		if (!AddEntriesToTable(L, "SpringShared",   LuaUICommand::PushEntries       )) KILL
+		if (!AddEntriesToTable(L, "Engine", "Unsynced", LuaUnsyncedCtrl::PushEntries    )) KILL
+		if (!AddEntriesToTable(L, "Engine", "Synced",   LuaSyncedCtrl::PushEntries      )) KILL
+		if (!AddEntriesToTable(L, "Engine", "Shared",   LuaSyncedRead::PushEntries      )) KILL
+		if (!AddEntriesToTable(L, "Engine", "Shared",   LuaUICommand::PushEntries       )) KILL
 		if (!AddEntriesToTable(L, "Engine",        LuaConstEngine::PushEntries      )) KILL
 		if (!AddEntriesToTable(L, "Game",            LuaConstGame::PushEntries      )) KILL
 		if (!AddEntriesToTable(L, "CMD",              LuaConstCMD::PushEntries      )) KILL
@@ -2509,14 +2509,14 @@ string CSplitLuaHandle::LoadFile(const std::string& filename, const std::string&
 
 /*** Calls a function from given team's PoV. In particular this makes callouts obey that team's visibility rules.
  *
- * @function SpringShared.CallAsTeam
+ * @function Engine.Shared.CallAsTeam
  * @param teamID integer Team ID.
  * @param func fun(...) The function to call.
  * @param ... any Arguments to pass to the function.
  * @return any ... The return values of the function.
  */
 /***
- * @function SpringShared.CallAsTeam
+ * @function Engine.Shared.CallAsTeam
  * @param options CallAsTeamOptions Options.
  * @param func fun(...) The function to call.
  * @param ... any Arguments to pass to the function.

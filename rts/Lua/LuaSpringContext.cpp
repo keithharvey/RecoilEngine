@@ -7,17 +7,22 @@
 namespace LuaSpringContext {
 
 namespace {
-	// Merge every key from global `srcName` into global `Spring`. Warn on
-	// collisions (key already in `Spring` from an earlier merge). First
-	// merge wins; later merges ignore colliding keys to keep the warning
-	// actionable rather than masking.
-	void MergeIntoSpring(lua_State* L, const char* srcName) {
-		lua_getglobal(L, srcName);
+	// Merge every key from the `Engine.<bucket>` sub-table into global
+	// `Spring`. Warn on collisions (key already in `Spring` from an earlier
+	// merge). First merge wins; later merges ignore colliding keys to keep
+	// the warning actionable rather than masking.
+	void MergeIntoSpring(lua_State* L, const char* bucket) {
+		lua_getglobal(L, "Engine");
 		if (!lua_istable(L, -1)) {
-			// Source table doesn't exist — handler didn't push anything into
-			// this bucket for this fenv (e.g. SpringSynced in unsynced
-			// context). Silently skip; caller controls which tables merge
-			// via the Context argument.
+			lua_pop(L, 1);
+			return;
+		}
+		lua_getfield(L, -1, bucket); // Engine[bucket]
+		lua_remove(L, -2);           // drop Engine, leave the bucket table
+		if (!lua_istable(L, -1)) {
+			// Bucket doesn't exist — handler didn't push anything into it for
+			// this fenv (e.g. Engine.Synced in unsynced context). Silently
+			// skip; caller controls which buckets merge via the Context arg.
 			lua_pop(L, 1);
 			return;
 		}
@@ -40,9 +45,9 @@ namespace {
 					: "<non-string>";
 				LOG_L(L_WARNING,
 					"[LuaSpringContext] Split-table collision: '%s' present in multiple of "
-					"SpringShared/SpringSynced/SpringUnsynced; keeping first-merged value. "
-					"Re-check the @function bucket declaration at the source (%s defines it).",
-					keyStr, srcName);
+					"Engine.Shared/Engine.Synced/Engine.Unsynced; keeping first-merged value. "
+					"Re-check the @function bucket declaration at the source (Engine.%s defines it).",
+					keyStr, bucket);
 				lua_pop(L, 1); // pop val; leave key for next lua_next
 			} else {
 				lua_pushvalue(L, -2); // dup key
@@ -67,11 +72,11 @@ void BuildSpringFromSplitTables(lua_State* L, Context ctx) {
 	// Always merge Shared first so it takes priority on any incidental
 	// collision — a function listed in both Shared and a context-specific
 	// bucket is almost certainly meant to be shared.
-	MergeIntoSpring(L, "SpringShared");
+	MergeIntoSpring(L, "Shared");
 	if (ctx == Context::Synced || ctx == Context::Both)
-		MergeIntoSpring(L, "SpringSynced");
+		MergeIntoSpring(L, "Synced");
 	if (ctx == Context::Unsynced || ctx == Context::Both)
-		MergeIntoSpring(L, "SpringUnsynced");
+		MergeIntoSpring(L, "Unsynced");
 }
 
 } // namespace LuaSpringContext

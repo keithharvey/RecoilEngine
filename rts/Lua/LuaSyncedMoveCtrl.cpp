@@ -35,7 +35,7 @@ bool LuaSyncedMoveCtrl::PushMoveCtrl(lua_State* L)
 	/***
 	 * Accessed via `Spring.MoveCtrl`.
 	 * 
-	 * @see SpringSynced.MoveCtrl
+	 * @see Engine.Synced.MoveCtrl
 	 * @class MoveCtrl
 	 */
 	lua_pushliteral(L, "MoveCtrl");

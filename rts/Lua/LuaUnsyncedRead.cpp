@@ -3375,6 +3375,68 @@ int LuaUnsyncedRead::GetTeamOrigColor(lua_State* L)
 
 /***
  *
+ * @function Engine.Unsynced.GetCustomPaletteColor
+ * @param index integer 0-based index into custom palette
+ * @return number? r factor from 0 to 1
+ * @return number? g factor from 0 to 1
+ * @return number? b factor from 0 to 1
+ */
+int LuaUnsyncedRead::GetCustomPaletteColor(lua_State* L)
+{
+	const auto customIndex = LuaUtils::ParsePalette(L, 1);
+	const float4 color = customColorPalette.GetColor(customIndex);
+
+	lua_pushnumber(L, color.x);
+	lua_pushnumber(L, color.y);
+	lua_pushnumber(L, color.z);
+	return 3;
+}
+
+/***
+ * Returns the custom palette index for a unit, or nil if using team color.
+ * @function Engine.Unsynced.GetUnitPaletteIndex
+ * @param unitID integer
+ * @return integer? customIndex [0..MAX_CUSTOM_COLORS) if unit uses a custom color, nil if using team color
+ */
+int LuaUnsyncedRead::GetUnitPaletteIndex(lua_State* L)
+{
+	const int unitID = luaL_checkint(L, 1);
+	const CUnit* unit = unitHandler.GetUnit(unitID);
+	if (unit == nullptr)
+		return 0;
+
+	if (CCustomColorPalette::IsCustomPaletteIndex(unit->paletteIndex)) {
+		lua_pushnumber(L, CCustomColorPalette::DecodePaletteIndex(unit->paletteIndex));
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+/***
+ * Returns the custom palette index for a feature, or nil if using team color.
+ * @function Engine.Unsynced.GetFeaturePaletteIndex
+ * @param featureID integer
+ * @return integer? customIndex [0..MAX_CUSTOM_COLORS) if feature uses a custom color, nil if using team color
+ */
+int LuaUnsyncedRead::GetFeaturePaletteIndex(lua_State* L)
+{
+	const int featureID = luaL_checkint(L, 1);
+	const CFeature* feature = featureHandler.GetFeature(featureID);
+	if (feature == nullptr)
+		return 0;
+
+	if (CCustomColorPalette::IsCustomPaletteIndex(feature->paletteIndex)) {
+		lua_pushnumber(L, CCustomColorPalette::DecodePaletteIndex(feature->paletteIndex));
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+
+/***
+ *
  * @function Engine.Unsynced.GetDrawSeconds
  * @return integer time Time in seconds.
  */

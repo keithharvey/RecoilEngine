@@ -17,7 +17,6 @@
 #include "Sim/Units/UnitHandler.h"
 #include "System/ContainerUtil.h"
 #include "System/EventHandler.h"
-#include "System/Exceptions.h"
 #include "System/MsgStrings.h"
 #include "System/Log/ILog.h"
 #include "System/creg/STL_Set.h"
@@ -219,8 +218,10 @@ void CTeam::GiveEverythingTo(const unsigned toTeam)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 
-	if (modInfo.game_economy)
-		throw user_error("GiveEverythingTo is deprecated when game_economy is enabled. Use Lua to transfer resources and units.");
+	if (modInfo.gameEconomy) {
+		LOG_L(L_WARNING, "[CTeam::%s] ignored: Lua owns transfers when gameEconomy is enabled", __func__);
+		return;
+	}
 
 	CTeam* target = teamHandler.Team(toTeam);
 
@@ -338,7 +339,7 @@ void CTeam::SlowUpdate()
 	RECOIL_DETAILED_TRACY_ZONE;
 	TeamStatistics& currentStats = GetCurrentStats();
 
-	if (modInfo.game_economy) {
+	if (modInfo.gameEconomy) {
 		currentStats.metalProduced  += resPrevIncome.metal;
 		currentStats.energyProduced += resPrevIncome.energy;
 		currentStats.metalUsed  += resPrevExpense.metal;

@@ -61,7 +61,6 @@ class CEventHandler
 
 		void TeamDied(int teamID);
 		void TeamChanged(int teamID);
-
 		void PlayerChanged(int playerID);
 		void PlayerAdded(int playerID);
 		void PlayerRemoved(int playerID, int reason);

@@ -9,19 +9,9 @@
 #include <fstream>
 #include "System/Misc/SpringTime.h"
 
-/**
- * Unified economy audit system for tracing resource transfers and solver performance.
- * Writes NDJSON to economy_audit.txt in the writeable data directory.
- * 
- * Usage from C++:
- *   economyAudit.Begin("PE", frame);  // Set context before calling Lua
- *   ... call Lua ...
- *   economyAudit.End();
- * 
- * Usage from Lua (via Spring.* bindings):
- *   Spring.EconomyAuditLog("team_input", {team_id=0, current=500, ...})
- *   Spring.EconomyAuditBreakpoint("Solver")
- */
+// Economy audit tracing (resource transfers + solver timings).
+// Writes NDJSON to economy_audit.txt in the writeable data dir; enabled via LogSections.
+// C++ brackets Lua calls with Begin()/End(); Lua logs via the Spring.EconomyAudit* bindings.
 class EconomyAudit {
 public:
 	static EconomyAudit& GetInstance();

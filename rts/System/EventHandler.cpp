@@ -8,7 +8,6 @@
 
 #include "Sim/Misc/ModInfo.h"
 #include "System/Config/ConfigHandler.h"
-#include "System/Exceptions.h"
 #include "System/Platform/Threading.h"
 #include "System/GlobalConfig.h"
 #include "System/Log/ILog.h"
@@ -65,8 +64,6 @@ void CEventHandler::SetupEvents()
 
 void CEventHandler::AddClient(CEventClient* ec)
 {
-	LOG("[AddClient] Adding client %p synced=%d", (void*)ec, ec->GetSynced() ? 1 : 0);
-
 	ListInsert(handles, ec);
 
 	for (const auto& element: eventMap) {
@@ -84,8 +81,6 @@ void CEventHandler::AddClient(CEventClient* ec)
 
 void CEventHandler::RemoveClient(CEventClient* ec)
 {
-	LOG("[RemoveClient] Removing client %p synced=%d", (void*)ec, ec->GetSynced() ? 1 : 0);
-
 	if (mouseOwner == ec)
 		mouseOwner = nullptr;
 
@@ -366,8 +361,10 @@ bool CEventHandler::AllowResourceLevel(int teamID, const std::string& type, floa
 bool CEventHandler::AllowResourceTransfer(int oldTeam, int newTeam, const char* type, float amount)
 {
 	ZoneScoped;
-	if (modInfo.game_economy)
-		throw user_error("AllowResourceTransfer is deprecated when game_economy is enabled");
+	if (modInfo.gameEconomy) {
+		LOG_L(L_WARNING, "[EventHandler::%s] denied: Lua owns resource transfers when gameEconomy is enabled", __func__);
+		return false;
+	}
 
 	return ControlIterateDefTrue(listAllowResourceTransfer, &CEventClient::AllowResourceTransfer, oldTeam, newTeam, type, amount);
 }

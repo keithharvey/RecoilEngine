@@ -907,7 +907,7 @@ void CGame::ClientReadNet()
 					pckt >> srcTeamID;
 					pckt >> dstTeamID;
 
-					if (modInfo.game_economy) {
+					if (modInfo.gameEconomy) {
 						eventHandler.TeamShare(srcTeamID, dstTeamID);
 						break;
 					}
@@ -1051,7 +1051,7 @@ void CGame::ClientReadNet()
 				const int32_t srcTeamID = playerHandler.Player(playerNum)->team;
 				const uint8_t dstTeamID = inbuf[2];
 
-				if (modInfo.game_economy) {
+				if (modInfo.gameEconomy) {
 					eventHandler.TeamShare(srcTeamID, dstTeamID);
 					AddTraffic(playerNum, packetCode, dataLength);
 					break;
@@ -1134,8 +1134,7 @@ void CGame::ClientReadNet()
 				const float metalShare = *reinterpret_cast<const float*>(&inbuf[3]);
 				const float energyShare = *reinterpret_cast<const float*>(&inbuf[7]);
 
-				// Apply share level changes regardless of game_economy mode.
-				// Share level is a player preference, not part of the economy controller logic.
+				// share level is a player preference, applied regardless of gameEconomy
 				if (eventHandler.AllowResourceLevel(teamNum, "m", metalShare))
 					team->resShare.metal = metalShare;
 				if (eventHandler.AllowResourceLevel(teamNum, "e", energyShare))

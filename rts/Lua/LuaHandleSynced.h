@@ -133,7 +133,6 @@ class CSyncedLuaHandle : public CLuaHandle
 		void SetEconomyController(int tableRef, int processEconomyRef);
 		int GetEconomyControllerTable() const { return economyControllerTableRef; }
 		int GetProcessEconomyRef() const { return processEconomyRef; }
-		int GetEconomyFunctionRef(const char* name) const;
 
 		// Clear all controller refs (called before Lua state swap)
 		void ClearControllerRefs();

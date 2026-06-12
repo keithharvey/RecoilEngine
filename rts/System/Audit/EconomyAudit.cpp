@@ -1,6 +1,7 @@
 /* This file is part of the Recoil engine (GPL v2 or later). */
 
 #include "EconomyAudit.h"
+#include "Sim/Misc/GlobalConstants.h"
 #include "System/FileSystem/DataDirLocater.h"
 #include "System/Log/ILog.h"
 #include "System/Misc/TracyDefs.h"
@@ -112,7 +113,7 @@ void EconomyAudit::Log(const std::string& eventType, const std::string& jsonData
 		char contextBuf[128];
 		snprintf(contextBuf, sizeof(contextBuf), 
 			"{\"source_path\":\"%s\",\"frame\":%d,\"game_time\":%.2f,",
-			active ? sourcePath.c_str() : "", frame, frame / 30.0);
+			active ? sourcePath.c_str() : "", frame, frame / (double)GAME_SPEED);
 		enriched = std::string(contextBuf) + jsonData.substr(1);
 	} else {
 		enriched = jsonData;

@@ -82,7 +82,6 @@
 #include "System/EventHandler.h"
 #include "System/ObjectDependenceTypes.h"
 #include "System/Log/ILog.h"
-#include "System/Misc/SpringTime.h"
 
 using std::max;
 
@@ -95,6 +94,22 @@ namespace {
 	static const char* GetResourceName(ResourceKind kind)
 	{
 		return (kind == ResourceKind::Metal) ? "metal" : "energy";
+	}
+
+	static std::string JsonEscape(const char* str)
+	{
+		std::string out;
+		for (const char* c = str; *c != '\0'; ++c) {
+			switch (*c) {
+				case '"' : out += "\\\""; break;
+				case '\\': out += "\\\\"; break;
+				case '\n': out += "\\n";  break;
+				case '\r': out += "\\r";  break;
+				case '\t': out += "\\t";  break;
+				default  : out += *c;     break;
+			}
+		}
+		return out;
 	}
 
 	static bool ResolveResourceDescriptor(const char* name, ResourceKind& kind, bool& isStorage)
@@ -188,7 +203,7 @@ namespace {
 		if (storageProvided)
 			storage = newStorage;
 
-		if (!modInfo.game_economy)
+		if (!modInfo.gameEconomy)
 			current = std::min(current, storage);
 
 		current = std::max(0.0f, current);
@@ -1437,8 +1452,8 @@ int LuaSyncedCtrl::UseTeamResource(lua_State* L)
 		return 1;
 	}
 
-luaL_error(L, "bad arguments");
-return 0;
+	luaL_error(L, "bad arguments");
+	return 0;
 }
 
 
@@ -1558,11 +1573,6 @@ int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 {
 	const int teamID = luaL_checkint(L, 1);
 
-	if (modInfo.game_economy) {
-		// Allow SetTeamResource even in game_economy mode to enable ad-hoc transfers via Lua gadgets
-		// (e.g. GG.ShareTeamResource implementation)
-	}
-
 	if (!teamHandler.IsValidTeam(teamID))
 		return 0;
 
@@ -1579,7 +1589,7 @@ int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 	switch (hashString(luaL_checkstring(L, 2))) {
 		case hashString("m"):
 		case hashString("metal"): {
-			if (modInfo.game_economy) {
+			if (modInfo.gameEconomy) {
 				team->res.metal = value;
 			} else {
 				team->res.metal = std::min<float>(team->resStorage.metal, value);
@@ -1588,7 +1598,7 @@ int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 
 		case hashString("e"):
 		case hashString("energy"): {
-			if (modInfo.game_economy) {
+			if (modInfo.gameEconomy) {
 				team->res.energy = value;
 			} else {
 				team->res.energy = std::min<float>(team->resStorage.energy, value);
@@ -1597,7 +1607,7 @@ int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 
 		case hashString("ms"):
 		case hashString("metalStorage"): {
-			if (modInfo.game_economy) {
+			if (modInfo.gameEconomy) {
 				team->resStorage.metal = value;
 			} else {
 				team->res.metal = std::min<float>(team->res.metal, team->resStorage.metal = value);
@@ -1606,7 +1616,7 @@ int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 
 		case hashString("es"):
 		case hashString("energyStorage"): {
-			if (modInfo.game_economy) {
+			if (modInfo.gameEconomy) {
 				team->resStorage.energy = value;
 			} else {
 				team->res.energy = std::min<float>(team->res.energy, team->resStorage.energy = value);
@@ -1759,7 +1769,7 @@ int LuaSyncedCtrl::AddTeamResourceStats(lua_State* L)
 		}
 
 		const int valueTableIdx = luaS_absIndex(L, LUA_TABLE_VALUE_INDEX);
-		for (int i = 0; i < entries.size(); ++i) {
+		for (size_t i = 0; i < entries.size(); ++i) {
 			// Parse by resource index, like `produced = { 1.23, 45.6 }`
 			lua_rawgeti(L, valueTableIdx, i+1);
 			if (lua_isnumber(L, -1))
@@ -1771,11 +1781,7 @@ int LuaSyncedCtrl::AddTeamResourceStats(lua_State* L)
 			if (!resourceDef)
 				continue;
 
-			/* TODO. The resource handler calls the resources Metal and Energy,
-			 * uppercase, but essentially everywhere else they're lowercase so
-			 * here I also adjust to the effective standard. Once resources can
-			 * be customized this will stop being a problem and the name can be
-			 * passed raw, without making a lowercase copy. */
+			// TODO: lowercase the name (handler says "Metal"/"Energy") until resources are customizable
 			std::string resourceName = resourceDef->name;
 			std::ranges::transform(resourceName, resourceName.begin(), [](unsigned char c){ return std::tolower(c); });
 
@@ -1809,7 +1815,6 @@ int LuaSyncedCtrl::SetEconomyController(lua_State* L)
 	if (!lua_istable(L, 1))
 		luaL_error(L, "SetEconomyController requires a GameEconomyController table");
 
-	// Validate required field
 	lua_getfield(L, 1, "ProcessEconomy");
 	if (!lua_isfunction(L, -1)) {
 		lua_pop(L, 1);
@@ -1823,11 +1828,9 @@ int LuaSyncedCtrl::SetEconomyController(lua_State* L)
 	if (slh == nullptr)
 		return 0;
 
-	// Store table reference
 	lua_pushvalue(L, 1);
 	int tableRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
-	// Store ProcessEconomy function reference
 	lua_getfield(L, 1, "ProcessEconomy");
 	int processEconRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
@@ -1860,7 +1863,6 @@ int LuaSyncedCtrl::SetUnitTransferController(lua_State* L)
 	if (!lua_istable(L, 1))
 		luaL_error(L, "SetUnitTransferController requires a GameUnitTransferController table");
 
-	// Validate required fields
 	static const char* requiredFields[] = {
 		"AllowUnitTransfer",
 		"TeamShare"
@@ -1881,15 +1883,12 @@ int LuaSyncedCtrl::SetUnitTransferController(lua_State* L)
 	if (slh == nullptr)
 		return 0;
 
-	// Store table reference
 	lua_pushvalue(L, 1);
 	int tableRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
-	// Store AllowUnitTransfer function reference
 	lua_getfield(L, 1, "AllowUnitTransfer");
 	int allowTransferRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
-	// Store TeamShare function reference
 	lua_getfield(L, 1, "TeamShare");
 	int teamShareRefVal = luaL_ref(L, LUA_REGISTRYINDEX);
 
@@ -1916,7 +1915,7 @@ int LuaSyncedCtrl::GetAuditTimer(lua_State* L)
  * Log an economy audit event with automatic context (source_path, frame).
  * Accepts flat key-value pairs to avoid Lua-side JSON encoding overhead.
  * Only logs if economy audit is enabled and a context is active.
- * 
+ *
  * @function Spring.EconomyAuditLog
  * @param eventType string the event type (e.g. "team_input", "storage_capped")
  * @param key1 string first key name
@@ -1930,26 +1929,25 @@ int LuaSyncedCtrl::EconomyAuditLog(lua_State* L)
 		lua_pushboolean(L, false);
 		return 1;
 	}
-	
+
 	const char* eventType = luaL_checkstring(L, 1);
-	
-	// Build JSON from flat key-value pairs
+
 	std::string json = "{";
 	const int n = lua_gettop(L);
 	bool first = true;
-	
+
 	for (int i = 2; i < n; i += 2) {
 		if (!lua_isstring(L, i)) continue;
-		
+
 		const char* key = lua_tostring(L, i);
-		
+
 		if (!first) json += ",";
 		first = false;
-		
+
 		json += "\"";
-		json += key;
+		json += JsonEscape(key);
 		json += "\":";
-		
+
 		const int valIdx = i + 1;
 		if (lua_isnumber(L, valIdx)) {
 			char buf[64];
@@ -1957,7 +1955,7 @@ int LuaSyncedCtrl::EconomyAuditLog(lua_State* L)
 			json += buf;
 		} else if (lua_isstring(L, valIdx)) {
 			json += "\"";
-			json += lua_tostring(L, valIdx);
+			json += JsonEscape(lua_tostring(L, valIdx));
 			json += "\"";
 		} else if (lua_isboolean(L, valIdx)) {
 			json += lua_toboolean(L, valIdx) ? "true" : "false";
@@ -1966,7 +1964,7 @@ int LuaSyncedCtrl::EconomyAuditLog(lua_State* L)
 		}
 	}
 	json += "}";
-	
+
 	economyAudit.Log(eventType, json);
 
 	lua_pushboolean(L, true);
@@ -1977,7 +1975,7 @@ int LuaSyncedCtrl::EconomyAuditLog(lua_State* L)
 /***
  * Log an economy audit event without requiring an active context.
  * Use for initialization data like team_info that happens before Begin().
- * 
+ *
  * @function Spring.EconomyAuditLogRaw
  * @param eventType string the event type (e.g. "team_info")
  * @param key1 string first key name
@@ -1991,26 +1989,25 @@ int LuaSyncedCtrl::EconomyAuditLogRaw(lua_State* L)
 		lua_pushboolean(L, false);
 		return 1;
 	}
-	
+
 	const char* eventType = luaL_checkstring(L, 1);
-	
-	// Build JSON from flat key-value pairs
+
 	std::string json = "{";
 	const int n = lua_gettop(L);
 	bool first = true;
-	
+
 	for (int i = 2; i < n; i += 2) {
 		if (!lua_isstring(L, i)) continue;
-		
+
 		const char* key = lua_tostring(L, i);
-		
+
 		if (!first) json += ",";
 		first = false;
-		
+
 		json += "\"";
-		json += key;
+		json += JsonEscape(key);
 		json += "\":";
-		
+
 		const int valIdx = i + 1;
 		if (lua_isnumber(L, valIdx)) {
 			char buf[64];
@@ -2018,7 +2015,7 @@ int LuaSyncedCtrl::EconomyAuditLogRaw(lua_State* L)
 			json += buf;
 		} else if (lua_isstring(L, valIdx)) {
 			json += "\"";
-			json += lua_tostring(L, valIdx);
+			json += JsonEscape(lua_tostring(L, valIdx));
 			json += "\"";
 		} else if (lua_isboolean(L, valIdx)) {
 			json += lua_toboolean(L, valIdx) ? "true" : "false";
@@ -2027,7 +2024,7 @@ int LuaSyncedCtrl::EconomyAuditLogRaw(lua_State* L)
 		}
 	}
 	json += "}";
-	
+
 	economyAudit.LogRaw(eventType, json);
 
 	lua_pushboolean(L, true);
@@ -2038,7 +2035,7 @@ int LuaSyncedCtrl::EconomyAuditLogRaw(lua_State* L)
 /***
  * Record a timing breakpoint in the economy audit stopwatch.
  * Only records if economy audit is enabled and a context is active.
- * 
+ *
  * @function Spring.EconomyAuditBreakpoint
  * @param name string the breakpoint name (e.g. "Solver", "Transfers")
  * @return boolean recorded true if the breakpoint was recorded
@@ -2049,7 +2046,7 @@ int LuaSyncedCtrl::EconomyAuditBreakpoint(lua_State* L)
 		lua_pushboolean(L, false);
 		return 1;
 	}
-	
+
 	const std::string name = luaL_checkstring(L, 1);
 	economyAudit.Breakpoint(name);
 	lua_pushboolean(L, true);

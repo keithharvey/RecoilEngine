@@ -223,7 +223,7 @@ bool LuaConstGame::PushEntries(lua_State* L)
 		/*** @field Game.nativeExcessSharing boolean whether the engine handles excess resources overflow */
 		LuaPushNamedBool  (L, "nativeExcessSharing", modInfo.nativeExcessSharing);
 		/*** @field Game.gameEconomy boolean whether Lua controls the economy via ProcessEconomy */
-		LuaPushNamedBool  (L, "gameEconomy", modInfo.game_economy);
+		LuaPushNamedBool  (L, "gameEconomy", modInfo.gameEconomy);
 	}
 
 	if (archiveScanner != nullptr && mapInfo != nullptr) {

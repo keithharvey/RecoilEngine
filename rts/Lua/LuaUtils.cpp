@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <cctype>
+#include <algorithm>
 
 #include "LuaUtils.h"
 #include "LuaConfig.h"
@@ -2040,18 +2041,36 @@ void LuaUtils::PushTeamResource(lua_State* L, const CTeam* team, float current, 
 	lua_rawset(L, -3);
 }
 
-void LuaUtils::ParseEconomyResult(lua_State* L, CTeam* team, float& current, float& sent, float& received, bool isMetal)
+void LuaUtils::ParseEconomyResult(lua_State* L, CTeam* team, bool isMetal)
 {
-	lua_getfield(L, -1, "current");
-	if (lua_isnumber(L, -1)) current = (float)lua_tonumber(L, -1);
+	float& res      = isMetal ? team->res.metal         : team->res.energy;
+	float& sent     = isMetal ? team->resSent.metal     : team->resSent.energy;
+	float& received = isMetal ? team->resReceived.metal : team->resReceived.energy;
+	const float storage = isMetal ? team->resStorage.metal : team->resStorage.energy;
+	TeamStatistics& stats = team->GetCurrentStats();
+
+	lua_getfield(L, -1, "delta");
+	if (lua_isnumber(L, -1)) {
+		const float val = (float)lua_tonumber(L, -1);
+		const float next = res + val;
+		const float clamped = std::clamp(next, 0.0f, storage);
+		if (next < -0.01f || next > storage + 0.01f) {
+			static bool warned = false;
+			if (!warned) {
+				warned = true;
+				LOG_L(L_WARNING, "[ProcessEconomy] economy controller violated the delta contract: res+delta=%f outside [0, %f]", next, storage);
+			}
+		}
+		res = clamped;
+	}
 	lua_pop(L, 1);
 
 	lua_getfield(L, -1, "sent");
 	if (lua_isnumber(L, -1)) {
 		const float val = (float)lua_tonumber(L, -1);
 		sent += val;
-		if (isMetal) team->GetCurrentStats().metalSent += val;
-		else         team->GetCurrentStats().energySent += val;
+		if (isMetal) stats.metalSent += val;
+		else         stats.energySent += val;
 	}
 	lua_pop(L, 1);
 
@@ -2059,8 +2078,21 @@ void LuaUtils::ParseEconomyResult(lua_State* L, CTeam* team, float& current, flo
 	if (lua_isnumber(L, -1)) {
 		const float val = (float)lua_tonumber(L, -1);
 		received += val;
-		if (isMetal) team->GetCurrentStats().metalReceived += val;
-		else         team->GetCurrentStats().energyReceived += val;
+		if (isMetal) stats.metalReceived += val;
+		else         stats.energyReceived += val;
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, -1, "excess");
+	if (lua_isnumber(L, -1)) {
+		const float val = (float)lua_tonumber(L, -1);
+		if (isMetal) {
+			stats.metalExcess += val;
+			team->resPrevExcess.metal = val;
+		} else {
+			stats.energyExcess += val;
+			team->resPrevExcess.energy = val;
+		}
 	}
 	lua_pop(L, 1);
 }

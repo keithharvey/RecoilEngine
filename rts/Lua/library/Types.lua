@@ -125,15 +125,15 @@
 
 ---@class ResourceData
 ---@field resourceType ResourceName
----@field current number
----@field storage number
----@field pull number
----@field income number
----@field expense number
----@field shareSlider number
+---@field current number Engine-owned snapshot (read-only to Lua)
+---@field storage number Engine-owned snapshot (read-only to Lua)
+---@field pull number Engine-owned snapshot (read-only to Lua)
+---@field income number Engine-owned snapshot (read-only to Lua)
+---@field expense number Engine-owned snapshot (read-only to Lua)
+---@field shareSlider number Engine stores, Lua interprets
 ---@field sent number
 ---@field received number
----@field excess number
+---@field excess number In a ProcessEconomy INPUT: the accumulated overflow pool to redistribute (zeroed by the engine after the callin). In GetTeamResourceData: last tick's wasted amount.
 
 ---@class TeamResourceData
 ---@field allyTeam number
@@ -144,6 +144,7 @@
 ---@class EconomyTeamResult
 ---@field teamId number
 ---@field resourceType ResourceName
----@field current number
+---@field delta number Net change vs the snapshot; engine applies clamp(res+delta, 0, storage)
 ---@field sent number
 ---@field received number
+---@field excess number Wasted overflow this tick; accumulated into team stats

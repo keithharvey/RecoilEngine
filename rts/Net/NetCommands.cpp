@@ -908,7 +908,11 @@ void CGame::ClientReadNet()
 					pckt >> dstTeamID;
 
 					if (modInfo.gameEconomy) {
-						eventHandler.TeamShare(srcTeamID, dstTeamID);
+						static bool warnedAIShare = false;
+						if (!warnedAIShare) {
+							warnedAIShare = true;
+							LOG_L(L_WARNING, "[Game::%s][NETMSG_AISHARE] legacy share packet ignored under gameEconomy; use the Lua transfer API", __func__);
+						}
 						break;
 					}
 
@@ -1052,7 +1056,11 @@ void CGame::ClientReadNet()
 				const uint8_t dstTeamID = inbuf[2];
 
 				if (modInfo.gameEconomy) {
-					eventHandler.TeamShare(srcTeamID, dstTeamID);
+					static bool warnedShare = false;
+					if (!warnedShare) {
+						warnedShare = true;
+						LOG_L(L_WARNING, "[Game::%s][NETMSG_SHARE] legacy share packet ignored under gameEconomy; use the Lua transfer API", __func__);
+					}
 					AddTraffic(playerNum, packetCode, dataLength);
 					break;
 				}

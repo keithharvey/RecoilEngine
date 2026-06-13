@@ -52,19 +52,11 @@ class LuaSyncedCtrl
 		static int AddTeamResource(lua_State* L);
 		static int UseTeamResource(lua_State* L);
 		static int GetTeamResourceData(lua_State* L);
-		static int SetTeamResourceData(lua_State* L);
 		static int SetTeamResource(lua_State* L);
 		static int SetTeamShareLevel(lua_State* L);
 		static int ShareTeamResource(lua_State* L);
 		static int SetEconomyController(lua_State* L);
 		static int SetUnitTransferController(lua_State* L);
-		static int GetAuditTimer(lua_State* L);
-
-		static int EconomyAuditLog(lua_State* L);
-		static int EconomyAuditLogRaw(lua_State* L);
-		static int EconomyAuditBreakpoint(lua_State* L);
-
-		static int AddTeamResourceStats(lua_State* L);
 
 		static int CallCOBScript(lua_State* L);
 		static int GetCOBScriptID(lua_State* L);

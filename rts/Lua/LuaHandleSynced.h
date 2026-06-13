@@ -162,6 +162,7 @@ class CSyncedLuaHandle : public CLuaHandle
 		// Economy controller refs
 		int economyControllerTableRef = LUA_NOREF;
 		int processEconomyRef = LUA_NOREF;
+		bool warnedNoEconomyController = false;
 
 		// Unit transfer controller refs
 		int unitTransferControllerTableRef = LUA_NOREF;

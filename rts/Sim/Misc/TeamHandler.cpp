@@ -7,6 +7,7 @@
 #include "Game/GameSetup.h"
 #include "Sim/Misc/GlobalConstants.h"
 #include "Sim/Misc/GlobalSynced.h"
+#include "Sim/Misc/ModInfo.h"
 #include "System/EventHandler.h"
 #include "System/Log/ILog.h"
 
@@ -139,7 +140,8 @@ void CTeamHandler::GameFrame(int frameNum)
 		teams[a].SlowUpdate();
 	}
 
-	eventHandler.ProcessEconomy(frameNum);
+	if (modInfo.gameEconomy)
+		eventHandler.ProcessEconomy(frameNum);
 }
 
 

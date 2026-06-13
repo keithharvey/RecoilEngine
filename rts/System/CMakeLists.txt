@@ -12,7 +12,6 @@ endif()
 make_global_var(sources_engine_System_common
 		"${CMAKE_CURRENT_SOURCE_DIR}/AABB.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/AIScriptHandler.cpp"
-		"${CMAKE_CURRENT_SOURCE_DIR}/Audit/EconomyAudit.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/Color.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/Config/ConfigHandler.cpp"
 		"${CMAKE_CURRENT_SOURCE_DIR}/Config/ConfigLocater.cpp"

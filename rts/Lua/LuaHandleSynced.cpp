@@ -51,7 +51,6 @@
 #include "System/Log/ILog.h"
 #include "System/Misc/SpringTime.h"
 
-#include "System/Audit/EconomyAudit.h"
 #include "System/SpringMath.h"
 #include "System/LoadLock.h"
 
@@ -698,7 +697,7 @@ bool CSyncedLuaHandle::TeamShare(int teamID, int targetTeamID)
 }
 
 // Push all team resource states to the registered Lua economy controller,
-// then apply the returned {teamId, resourceType, current, sent, received} entries.
+// then apply the returned {teamId, resourceType, delta, sent, received, excess} entries.
 void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 {
 	ZoneScopedN("ProcessEconomy");
@@ -707,10 +706,13 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 	if (!IsValid())
 		return;
 
-	if (processEconomyRef == LUA_NOREF)
+	if (processEconomyRef == LUA_NOREF) {
+		if (!warnedNoEconomyController) {
+			warnedNoEconomyController = true;
+			LOG_L(L_WARNING, "[ProcessEconomy] gameEconomy enabled but no controller registered (Spring.SetEconomyController); economy is frozen");
+		}
 		return;
-
-	economyAudit.Begin("PE", gameFrame);
+	}
 
 	LUA_CALL_IN_CHECK(L);
 	lua_checkstack(L, 8);
@@ -719,7 +721,6 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 	if (!lua_isfunction(L, -1)) {
 		lua_pop(L, 1);
 		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Controller ref=%d is NOT a function!", gameFrame, processEconomyRef);
-		economyAudit.End();
 		return;
 	}
 
@@ -754,8 +755,6 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 		}
 	}
 
-	economyAudit.Breakpoint("CppMunge");
-	economyAudit.SaveCheckpoint(); // Save time before entering Lua
 	TracyPlot("Economy/TeamCount", static_cast<int64_t>(teamCount));
 
 	// Call the Lua controller
@@ -763,16 +762,12 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 		const char* err = lua_tostring(L, -1);
 		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Lua pcall error: %s", gameFrame, err ? err : "unknown");
 		lua_pop(L, 1);
-		economyAudit.End();
 		return;
 	}
-
-	economyAudit.BreakpointAbsolute("LuaTotal"); // Measures from checkpoint (all Lua time)
 
 	if (!lua_istable(L, -1)) {
 		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Lua did not return a table!", gameFrame);
 		lua_pop(L, 1);
-		economyAudit.End();
 		return;
 	}
 
@@ -797,16 +792,14 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 			lua_pop(L, 1);
 
 			if (resType == "metal") {
-				LuaUtils::ParseEconomyResult(L, team, team->res.metal, team->resSent.metal, team->resReceived.metal, true);
+				LuaUtils::ParseEconomyResult(L, team, true);
 			} else if (resType == "energy") {
-				LuaUtils::ParseEconomyResult(L, team, team->res.energy, team->resSent.energy, team->resReceived.energy, false);
+				LuaUtils::ParseEconomyResult(L, team, false);
 			}
 			processedEntries++;
 		}
 		lua_pop(L, 1);
 	}
-
-	economyAudit.Breakpoint("CppSetters");
 
 	// Zero accumulated excess after ProcessEconomy has used it
 	for (int teamID = 0; teamID < teamHandler.ActiveTeams(); ++teamID) {
@@ -814,8 +807,6 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 		if (team != nullptr)
 			team->resDelayedShare = 0.0f;
 	}
-
-	economyAudit.End();
 
 	const auto totalUs = (spring_gettime() - startTime).toMicroSecsi();
 	TracyPlot("Economy/TotalTime_us", static_cast<int64_t>(totalUs));

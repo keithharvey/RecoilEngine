@@ -747,8 +747,8 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 			lua_pushboolean(L, team->isDead);
 			lua_rawset(L, -3);
 
-			LuaUtils::PushTeamResource(L, team, team->res.metal, team->resStorage.metal, team->resPull.metal, team->resIncome.metal, team->resExpense.metal, team->resShare.metal, team->resDelayedShare.metal, "metal");
-			LuaUtils::PushTeamResource(L, team, team->res.energy, team->resStorage.energy, team->resPull.energy, team->resIncome.energy, team->resExpense.energy, team->resShare.energy, team->resDelayedShare.energy, "energy");
+			LuaUtils::PushTeamResource(L, team, team->res.metal, team->resStorage.metal, team->resPrevPull.metal, team->resPrevIncome.metal, team->resPrevExpense.metal, team->resShare.metal, team->resDelayedShare.metal, "metal");
+			LuaUtils::PushTeamResource(L, team, team->res.energy, team->resStorage.energy, team->resPrevPull.energy, team->resPrevIncome.energy, team->resPrevExpense.energy, team->resShare.energy, team->resDelayedShare.energy, "energy");
 
 			lua_rawset(L, -3);
 			teamCount++;

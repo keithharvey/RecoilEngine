@@ -1709,6 +1709,10 @@ int LuaSyncedCtrl::SetEconomyController(lua_State* L)
 	if (slh == nullptr)
 		return 0;
 
+	// Single owner by design: economy mutation has no sensible way to merge two controllers.
+	if (slh->GetProcessEconomyRef() != LUA_NOREF)
+		luaL_error(L, "SetEconomyController: an economy controller is already registered");
+
 	lua_pushvalue(L, 1);
 	int tableRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
@@ -1763,6 +1767,10 @@ int LuaSyncedCtrl::SetUnitTransferController(lua_State* L)
 	CSyncedLuaHandle* slh = dynamic_cast<CSyncedLuaHandle*>(lh);
 	if (slh == nullptr)
 		return 0;
+
+	// Single owner by design: the controller takes over these callins wholesale.
+	if (slh->GetUnitTransferControllerTable() != LUA_NOREF)
+		luaL_error(L, "SetUnitTransferController: a unit transfer controller is already registered");
 
 	lua_pushvalue(L, 1);
 	int tableRef = luaL_ref(L, LUA_REGISTRYINDEX);

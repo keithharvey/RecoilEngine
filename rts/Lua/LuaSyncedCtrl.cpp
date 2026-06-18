@@ -1454,38 +1454,22 @@ int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 	switch (hashString(luaL_checkstring(L, 2))) {
 		case hashString("m"):
 		case hashString("metal"): {
-			if (modInfo.gameEconomy) {
-				team->res.metal = value;
-			} else {
-				team->res.metal = std::min<float>(team->resStorage.metal, value);
-			}
+			team->res.metal = std::min<float>(team->resStorage.metal, value);
 		} break;
 
 		case hashString("e"):
 		case hashString("energy"): {
-			if (modInfo.gameEconomy) {
-				team->res.energy = value;
-			} else {
-				team->res.energy = std::min<float>(team->resStorage.energy, value);
-			}
+			team->res.energy = std::min<float>(team->resStorage.energy, value);
 		} break;
 
 		case hashString("ms"):
 		case hashString("metalStorage"): {
-			if (modInfo.gameEconomy) {
-				team->resStorage.metal = value;
-			} else {
-				team->res.metal = std::min<float>(team->res.metal, team->resStorage.metal = value);
-			}
+			team->res.metal = std::min<float>(team->res.metal, team->resStorage.metal = value);
 		} break;
 
 		case hashString("es"):
 		case hashString("energyStorage"): {
-			if (modInfo.gameEconomy) {
-				team->resStorage.energy = value;
-			} else {
-				team->res.energy = std::min<float>(team->res.energy, team->resStorage.energy = value);
-			}
+			team->res.energy = std::min<float>(team->res.energy, team->resStorage.energy = value);
 		} break;
 	}
 

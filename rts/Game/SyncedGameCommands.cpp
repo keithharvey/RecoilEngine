@@ -510,11 +510,6 @@ public:
 	}
 
 	bool Execute(const SyncedAction& action) const final {
-		if (modInfo.gameEconomy) {
-			LOG_L(L_WARNING, "[TakeAction] engine /take is disabled when gameEconomy is enabled");
-			return true;
-		}
-
 		const CPlayer* actionPlayer = playerHandler.Player(action.GetPlayerID());
 
 		if (actionPlayer->spectator && !gs->cheatEnabled)

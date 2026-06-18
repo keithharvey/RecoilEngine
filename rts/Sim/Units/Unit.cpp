@@ -1042,9 +1042,9 @@ void CUnit::SlowUpdate()
 
 			health         = std::max(0.0f, health - maxHealth * buildDecay);
 			buildProgress -= buildDecay;
-			if (!modInfo.gameEconomy) {
-				AddResources({cost.metal * buildDecay, 0.0f}, false);
-			}
+			// Mirror of construction consumption (AddBuildPower), which stays engine-side: refunding
+			// the sunk metal is a sim-event counterpart to it, not part of the gameEconomy production model.
+			AddResources({cost.metal * buildDecay, 0.0f}, false);
 
 			eventHandler.UnitConstructionDecayed(this
 				, INV_GAME_SPEED * framesSinceLastNanoAdd

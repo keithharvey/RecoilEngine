@@ -315,9 +315,8 @@ void CFactory::StopBuild()
 
 	if (curBuild) {
 		if (curBuild->beingBuilt) {
-			if (!modInfo.gameEconomy) {
-				AddResources({curBuild->cost.metal * curBuild->buildProgress, 0.0f}, false);
-			}
+			// Cancel refund mirrors construction consumption (engine-side); not gameEconomy's concern.
+			AddResources({curBuild->cost.metal * curBuild->buildProgress, 0.0f}, false);
 			curBuild->KillUnit(nullptr, false, true, -CSolidObject::DAMAGE_FACTORY_CANCEL);
 		}
 		DeleteDeathDependence(curBuild, DEPENDENCE_BUILD);

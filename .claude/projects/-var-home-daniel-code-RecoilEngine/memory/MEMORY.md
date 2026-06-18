@@ -1,2 +1,2 @@
-- [PR 2664 game economy](pr-2664-game-economy.md) — ProcessEconomy economy boundary, sprunk's review asks, what's done vs deferred
+- [PR 2664 game economy](pr-2664-game-economy.md) — gameEconomy modrule landed at redistribution-only; sprunk's competing #2642; pivot to native ECS economy + Lua policy callin (full-ownership RFC in plans/)
 - [User comment style](user-comment-style.md) — terse comments, why-only, no histrionics

@@ -126,7 +126,9 @@ CUnit::~CUnit()
 	if (activated && unitDef->targfac)
 		losHandler->IncreaseAllyTeamRadarErrorSize(allyteam);
 
-	SetStorage(0.0f);
+	if (!modInfo.gameEconomy) {
+		SetStorage(0.0f);
+	}
 
 	// not all unit deletions run through KillUnit(),
 	// but we always want to call this for ourselves
@@ -429,8 +431,10 @@ void CUnit::FinishedBuilding(bool postInit)
 
 	if (unitDef->activateWhenBuilt)
 		Activate();
-
-	SetStorage(unitDef->storage);
+	
+	if (!modInfo.gameEconomy) {
+		SetStorage(unitDef->storage);
+	}
 
 	// Sets the frontdir in sync with heading.
 	UpdateDirVectors(!upright && IsOnGround(), false, 0.0f);
@@ -1038,8 +1042,9 @@ void CUnit::SlowUpdate()
 
 			health         = std::max(0.0f, health - maxHealth * buildDecay);
 			buildProgress -= buildDecay;
-
-			AddResources({cost.metal * buildDecay, 0.0f}, false);
+			if (!modInfo.gameEconomy) {
+				AddResources({cost.metal * buildDecay, 0.0f}, false);
+			}
 
 			eventHandler.UnitConstructionDecayed(this
 				, INV_GAME_SPEED * framesSinceLastNanoAdd
@@ -1061,37 +1066,37 @@ void CUnit::SlowUpdate()
 
 	moveType->SlowUpdate();
 
+	if (!modInfo.gameEconomy) {
+		AddResources(resourcesUncondMake);
+		UseResources(resourcesUncondUse);
+	
+		if (activated && UseResources(resourcesCondUse))
+			AddResources(resourcesCondMake);
 
-	// FIXME: scriptMakeMetal ...?
-	AddResources(resourcesUncondMake);
-	UseResources(resourcesUncondUse);
+		AddResources(unitDef->resourceMake * 0.5f);
 
-	if (activated && UseResources(resourcesCondUse))
-		AddResources(resourcesCondMake);
+		if (activated) {
 
-	AddResources(unitDef->resourceMake * 0.5f);
+			/* Due to legacy API limitations, games often define conditional resourcing via negative upkeep.
+			 * Handle this separately via Add; this doesn't change the resulting resource totals, but makes it
+			 * show up the expected way in GUI tooltips and endgame stats. Encourage games to eventually use
+			 * `makesResources` instead, once that becomes available. */
+			const auto [positiveUpkeep, negativeUpkeep] = SplitResourcePackIntoPositiveNegative(unitDef->upkeep);
+			AddResources(negativeUpkeep * 0.5f);
 
-	if (activated) {
+			if (UseResources(positiveUpkeep * 0.5f)) {
+				AddResources(unitDef->makesResources * 0.5f);
 
-		/* Due to legacy API limitations, games often define conditional resourcing via negative upkeep.
-		 * Handle this separately via Add; this doesn't change the resulting resource totals, but makes it
-		 * show up the expected way in GUI tooltips and endgame stats. Encourage games to eventually use
-		 * `makesResources` instead, once that becomes available. */
-		const auto [positiveUpkeep, negativeUpkeep] = SplitResourcePackIntoPositiveNegative(unitDef->upkeep);
-		AddResources(negativeUpkeep * 0.5f);
+				if (unitDef->extractsMetal > 0.0f)
+					AddResources({metalExtract * 0.5f, 0.0f});
+			}
 
-		if (UseResources(positiveUpkeep * 0.5f)) {
-			AddResources(unitDef->makesResources * 0.5f);
-
-			if (unitDef->extractsMetal > 0.0f)
-				AddResources({metalExtract * 0.5f, 0.0f});
+			AddResources(SResourcePack(envResHandler.GetCurrentWindStrength()).cap_at(unitDef->windGenerator) * 0.5f);
 		}
 
-		AddResources(SResourcePack(envResHandler.GetCurrentWindStrength()).cap_at(unitDef->windGenerator) * 0.5f);
+		// FIXME: tidal part should be under "if (activated)"?
+		AddResources(unitDef->tidalGenerator * (envResHandler.GetCurrentTidalStrength() * 0.5f));
 	}
-
-	// FIXME: tidal part should be under "if (activated)"?
-	AddResources(unitDef->tidalGenerator * (envResHandler.GetCurrentTidalStrength() * 0.5f));
 
 
 	if (health < maxHealth) {

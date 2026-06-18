@@ -757,51 +757,15 @@ void CSyncedLuaHandle::ProcessEconomy(int gameFrame)
 
 	TracyPlot("Economy/TeamCount", static_cast<int64_t>(teamCount));
 
-	// Call the Lua controller
-	if (lua_pcall(L, 2, 1, 0) != 0) {
+	// Fire-and-forget: the controller applies its own changes via the resource mutators; no return.
+	if (lua_pcall(L, 2, 0, 0) != 0) {
 		const char* err = lua_tostring(L, -1);
 		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Lua pcall error: %s", gameFrame, err ? err : "unknown");
 		lua_pop(L, 1);
 		return;
 	}
 
-	if (!lua_istable(L, -1)) {
-		LOG_L(L_ERROR, "[ProcessEconomy] frame=%d - Lua did not return a table!", gameFrame);
-		lua_pop(L, 1);
-		return;
-	}
-
-	{
-		ZoneScopedN("PE_CppSetters");
-
-		int processedEntries = 0;
-		for (lua_pushnil(L); lua_next(L, -2) != 0; lua_pop(L, 1)) {
-			if (!lua_istable(L, -1))
-				continue;
-
-			lua_getfield(L, -1, "teamId");
-			const int teamID = (int)luaL_optnumber(L, -1, -1);
-			lua_pop(L, 1);
-
-			CTeam* team = teamHandler.Team(teamID);
-			if (team == nullptr)
-				continue;
-
-			lua_getfield(L, -1, "resourceType");
-			const std::string resType = luaL_optstring(L, -1, "");
-			lua_pop(L, 1);
-
-			if (resType == "metal") {
-				LuaUtils::ParseEconomyResult(L, team, true);
-			} else if (resType == "energy") {
-				LuaUtils::ParseEconomyResult(L, team, false);
-			}
-			processedEntries++;
-		}
-		lua_pop(L, 1);
-	}
-
-	// Zero accumulated excess after ProcessEconomy has used it
+	// Zero accumulated excess after the controller has had a chance to redistribute it.
 	for (int teamID = 0; teamID < teamHandler.ActiveTeams(); ++teamID) {
 		CTeam* team = teamHandler.Team(teamID);
 		if (team != nullptr)

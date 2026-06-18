@@ -51,6 +51,7 @@ class LuaSyncedCtrl
 
 		static int AddTeamResource(lua_State* L);
 		static int UseTeamResource(lua_State* L);
+		static int AddTeamResourceStats(lua_State* L);
 		static int GetTeamResourceData(lua_State* L);
 		static int SetTeamResource(lua_State* L);
 		static int SetTeamShareLevel(lua_State* L);

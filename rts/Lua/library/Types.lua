@@ -141,10 +141,7 @@
 ---@field metal ResourceData
 ---@field energy ResourceData
 
----@class EconomyTeamResult
----@field teamId number
----@field resourceType ResourceName
----@field delta number Net change vs the snapshot; engine applies clamp(res+delta, 0, storage)
----@field sent number
----@field received number
----@field excess number Wasted overflow this tick; accumulated into team stats
+---@class ResourceShareStats Sharing stats for Spring.AddTeamResourceStats. All fields optional.
+---@field sent number? Amount shared away this tick; accumulated into sent totals.
+---@field received number? Amount received this tick; accumulated into received totals.
+---@field excess number? Amount wasted this tick; accumulated into lifetime excess and recorded as this tick's waste.

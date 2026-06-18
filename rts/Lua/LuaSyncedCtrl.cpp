@@ -210,6 +210,7 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 
 	REGISTER_LUA_CFUNC(AddTeamResource);
 	REGISTER_LUA_CFUNC(UseTeamResource);
+	REGISTER_LUA_CFUNC(AddTeamResourceStats);
 	REGISTER_LUA_CFUNC(GetTeamResourceData);
 	REGISTER_LUA_CFUNC(SetTeamResource);
 	REGISTER_LUA_CFUNC(SetTeamShareLevel);
@@ -1492,6 +1493,79 @@ int LuaSyncedCtrl::SetTeamResource(lua_State* L)
 }
 
 
+/***
+ * Records resource sharing stats (sent/received/excess) without moving resources.
+ *
+ * For economy controllers that move pools via Spring.SetTeamResource, which would otherwise
+ * leave sharing miscounted as production/usage. `sent`/`received` accumulate; `excess`
+ * accumulates into the lifetime total and records this tick's waste.
+ *
+ * @function Spring.AddTeamResourceStats
+ * @param teamID integer
+ * @param type ResourceName
+ * @param stats ResourceShareStats Table with optional `sent`, `received`, `excess` number fields.
+ * @return nil
+ */
+int LuaSyncedCtrl::AddTeamResourceStats(lua_State* L)
+{
+	const int teamID = luaL_checkint(L, 1);
+
+	if (!teamHandler.IsValidTeam(teamID))
+		return 0;
+
+	if (!CanControlTeam(L, teamID))
+		return 0;
+
+	CTeam* team = teamHandler.Team(teamID);
+
+	if (team == nullptr)
+		return 0;
+
+	const char rtype = luaL_checkstring(L, 2)[0];
+	if (rtype != 'm' && rtype != 'e')
+		return 0;
+
+	luaL_checktype(L, 3, LUA_TTABLE);
+
+	const bool isMetal = (rtype == 'm');
+
+	float& resSent     = isMetal ? team->resSent.metal      : team->resSent.energy;
+	float& resReceived = isMetal ? team->resReceived.metal  : team->resReceived.energy;
+	float& resExcess   = isMetal ? team->resPrevExcess.metal : team->resPrevExcess.energy;
+
+	TeamStatistics& stats = team->GetCurrentStats();
+	float& statSent     = isMetal ? stats.metalSent     : stats.energySent;
+	float& statReceived = isMetal ? stats.metalReceived : stats.energyReceived;
+	float& statExcess   = isMetal ? stats.metalExcess   : stats.energyExcess;
+
+	lua_getfield(L, 3, "sent");
+	if (lua_isnumber(L, -1)) {
+		const float val = std::max(0.0f, lua_tofloat(L, -1));
+		resSent  += val;
+		statSent += val;
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, 3, "received");
+	if (lua_isnumber(L, -1)) {
+		const float val = std::max(0.0f, lua_tofloat(L, -1));
+		resReceived  += val;
+		statReceived += val;
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, 3, "excess");
+	if (lua_isnumber(L, -1)) {
+		const float val = std::max(0.0f, lua_tofloat(L, -1));
+		resExcess   = val;
+		statExcess += val;
+	}
+	lua_pop(L, 1);
+
+	return 0;
+}
+
+
 /*** Changes the resource amount for a team beyond which resources aren't stored but transferred to other allied teams if possible.
  *
  * @function Spring.SetTeamShareLevel
@@ -1601,16 +1675,17 @@ int LuaSyncedCtrl::ShareTeamResource(lua_State* L)
 /***
  * @class GameEconomyController
  * @x_helper
- * @field ProcessEconomy function The economy solver: function(frame, teamsTable) -> updatedTeamsTable
+ * @field ProcessEconomy function The economy solver: function(frame, teamsTable). Returns nothing.
  */
 
 /*** Registers the economy controller.
- * When registered, the engine will call ProcessEconomy each frame with team resource data.
- * Lua processes the economy (overflow sharing, etc.) and returns updated values.
+ * When registered, the engine calls ProcessEconomy each economy step with a read-only
+ * snapshot of every team's resource data (see TeamResourceData).
  *
- * Contract: the engine owns `current` at all times; the controller must not call resource
- * mutators during ProcessEconomy. Results are deltas, not absolutes. The engine zeroes the
- * excess pool after applying results.
+ * Contract: ProcessEconomy applies its results itself, during the call, via the normal
+ * resource mutators - Spring.SetTeamResource for pools and Spring.AddTeamResourceStats for
+ * sharing stats (sent/received/excess). It returns nothing; the engine does not read or
+ * apply a return value. The engine zeroes the excess pool after the call.
  *
  * @function Spring.SetEconomyController
  * @param controller GameEconomyController Table with ProcessEconomy function

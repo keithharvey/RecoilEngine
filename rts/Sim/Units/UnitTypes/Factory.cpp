@@ -315,7 +315,9 @@ void CFactory::StopBuild()
 
 	if (curBuild) {
 		if (curBuild->beingBuilt) {
-			AddResources({curBuild->cost.metal * curBuild->buildProgress, 0.0f}, false);
+			if (!modInfo.gameEconomy) {
+				AddResources({curBuild->cost.metal * curBuild->buildProgress, 0.0f}, false);
+			}
 			curBuild->KillUnit(nullptr, false, true, -CSolidObject::DAMAGE_FACTORY_CANCEL);
 		}
 		DeleteDeathDependence(curBuild, DEPENDENCE_BUILD);

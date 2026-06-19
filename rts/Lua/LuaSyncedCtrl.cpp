@@ -164,6 +164,7 @@ bool LuaSyncedCtrl::PushEntries(lua_State* L)
 	REGISTER_LUA_CFUNC(AddTeamResource);
 	REGISTER_LUA_CFUNC(UseTeamResource);
 	REGISTER_LUA_CFUNC(SetTeamResource);
+	REGISTER_LUA_CFUNC(AddTeamResourceExcessStats);
 	REGISTER_LUA_CFUNC(SetTeamShareLevel);
 	REGISTER_LUA_CFUNC(ShareTeamResource);
 
@@ -1399,6 +1400,54 @@ int LuaSyncedCtrl::SetTeamShareLevel(lua_State* L)
 		case 'e': { team->resShare.energy = std::clamp(value, 0.0f, 1.0f); } break;
 		default : {                                                   } break;
 	}
+
+	return 0;
+}
+
+
+/***
+ * Records resource excess for a team without moving resources.
+ *
+ * For economy controllers that move pools via Spring.SetTeamResource, which would otherwise
+ * leave excess miscounted as production. The amount accumulates into the lifetime excess
+ * total and is recorded as this tick's waste. Other stats (sent/received) are conserved
+ * transfers and belong in Lua; only excess legitimately leaves the engine's resource ledger.
+ *
+ * @function Spring.AddTeamResourceExcessStats
+ * @param teamID integer
+ * @param type ResourceName
+ * @param excess number Amount wasted this tick.
+ * @return nil
+ */
+int LuaSyncedCtrl::AddTeamResourceExcessStats(lua_State* L)
+{
+	const int teamID = luaL_checkint(L, 1);
+
+	if (!teamHandler.IsValidTeam(teamID))
+		return 0;
+
+	if (!CanControlTeam(L, teamID))
+		return 0;
+
+	CTeam* team = teamHandler.Team(teamID);
+
+	if (team == nullptr)
+		return 0;
+
+	const char rtype = luaL_checkstring(L, 2)[0];
+	if (rtype != 'm' && rtype != 'e')
+		return 0;
+
+	const bool isMetal = (rtype == 'm');
+	const float val = std::max(0.0f, luaL_checkfloat(L, 3));
+
+	float& resExcess = isMetal ? team->resPrevExcess.metal : team->resPrevExcess.energy;
+
+	TeamStatistics& stats = team->GetCurrentStats();
+	float& statExcess = isMetal ? stats.metalExcess : stats.energyExcess;
+
+	resExcess   = val;
+	statExcess += val;
 
 	return 0;
 }

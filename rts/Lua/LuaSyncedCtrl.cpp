@@ -1408,10 +1408,8 @@ int LuaSyncedCtrl::SetTeamShareLevel(lua_State* L)
 /***
  * Records resource excess for a team without moving resources.
  *
- * For economy controllers that move pools via Spring.SetTeamResource, which would otherwise
- * leave excess miscounted as production. The amount accumulates into the lifetime excess
- * total and is recorded as this tick's waste. Other stats (sent/received) are conserved
- * transfers and belong in Lua; only excess legitimately leaves the engine's resource ledger.
+ * The engine normally tracks excess, but if you use `gadget:ResourceExcess`
+ * to handle it manually it's now also up to you to track stats.
  *
  * @function Spring.AddTeamResourceExcessStats
  * @param teamID integer

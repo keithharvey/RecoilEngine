@@ -1444,7 +1444,7 @@ int LuaSyncedCtrl::AddTeamResourceExcessStats(lua_State* L)
 	TeamStatistics& stats = team->GetCurrentStats();
 	float& statExcess = isMetal ? stats.metalExcess : stats.energyExcess;
 
-	resExcess   = val;
+	resExcess  += val;
 	statExcess += val;
 
 	return 0;
